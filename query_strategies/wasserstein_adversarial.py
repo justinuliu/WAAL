@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.autograd import grad
+import math
 
 
 # setting gradient values
@@ -35,6 +36,17 @@ def gradient_penalty(critic, h_s, h_t):
     gradient_penalty = ((gradient_norm - 1)**2).mean()
 
     return gradient_penalty
+
+
+def learning_rate(init, epoch, total_epoch):
+    optimal_factor = 0
+    p = 1. * epoch / total_epoch;
+    if p >= 0.75:
+        optimal_factor = 2
+    elif p >= 0.5:
+        optimal_factor = 1
+
+    return init * math.pow(0.1, optimal_factor)
 
 
 class WAAL:
@@ -95,13 +107,6 @@ class WAAL:
         self.clf = self.net_clf().to(self.device)
         self.dis = self.net_dis().to(self.device)
 
-
-        # setting three optimizers
-
-        opt_fea = optim.SGD(self.fea.parameters(),**self.args['optimizer_args'])
-        opt_clf = optim.SGD(self.clf.parameters(),**self.args['optimizer_args'])
-        opt_dis = optim.SGD(self.dis.parameters(),**self.args['optimizer_args'])
-
         # setting idx_lb and idx_ulb
         idx_lb_train = np.arange(self.n_pool)[self.idx_lb]
         idx_ulb_train = np.arange(self.n_pool)[~self.idx_lb]
@@ -117,6 +122,18 @@ class WAAL:
 
 
         for epoch in range(n_epoch):
+
+            # setting three optimizers
+            print("lr=%f" % learning_rate(self.args['optimizer_args']['lr'], epoch, total_epoch))
+            opt_fea = optim.SGD(self.fea.parameters(),
+                                lr=learning_rate(self.args['optimizer_args']['lr'], epoch, total_epoch),
+                                momentum=self.args['optimizer_args']['momentum'])
+            opt_clf = optim.SGD(self.clf.parameters(),
+                                lr=learning_rate(self.args['optimizer_args']['lr'], epoch, total_epoch),
+                                momentum=self.args['optimizer_args']['momentum'])
+            opt_dis = optim.SGD(self.dis.parameters(),
+                                lr=learning_rate(self.args['optimizer_args']['lr'], epoch, total_epoch),
+                                momentum=self.args['optimizer_args']['momentum'])
 
             # setting the training mode in the beginning of EACH epoch
             # (since we need to compute the training accuracy during the epoch, optional)

@@ -11,6 +11,7 @@ NUM_INIT_LB = 1000
 NUM_QUERY   = 1000
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
+QUERY_STRATEGY = "WAAL"
 
 
 args_pool = {
@@ -65,7 +66,7 @@ print('number of testing pool: {}'.format(n_test))
 
 # setting training parameters
 alpha = 2e-3
-epoch = 80
+epoch = 8
 
 # Generate the initial labeled pool
 idxs_lb = np.zeros(n_pool, dtype=bool)
@@ -100,7 +101,7 @@ for rd in range(1,NUM_ROUND+1):
     print('================Round {:d}==============='.format(rd))
 
     #epoch += 5
-    q_idxs = strategy.query(NUM_QUERY)
+    q_idxs = strategy.query(NUM_QUERY, QUERY_STRATEGY)
     idxs_lb[q_idxs] = True
 
     # update

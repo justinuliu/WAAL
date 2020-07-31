@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.autograd import grad
 import math
+import torch.distributions as distributions
 
 
 # setting gradient values
@@ -356,7 +357,7 @@ class WAAL:
         return value
 
 
-    def query(self,query_num):
+    def query(self,query_num, strategy="WAAL"):
 
         """
         adversarial query strategy
@@ -389,14 +390,21 @@ class WAAL:
         # computing the decision score
         total_score = uncertainly_score - self.selection * dis_score
         # print(total_score)
-        b = total_score.sort()[1][:query_num]
+        # b = total_score.sort()[1][:query_num]
         # print(total_score[b])
 
 
         # sort the score with minimal query_number examples
         # expected value outputs from smaller to large
-
-        return idxs_unlabeled[total_score.sort()[1][:query_num]]
+        if "Random" in strategy:
+            return idxs_unlabeled[torch.randperm(total_score.shape[0])[:query_num]]
+        elif "Entropy" in strategy:
+            entropy_score = distributions.categorical.Categorical(probs).entropy()
+            return idxs_unlabeled[entropy_score.sort(descending=True)[1][:query_num]]
+        elif "WAAL" in strategy:
+            return idxs_unlabeled[total_score.sort()[1][:query_num]]
+        else:
+            raise Exception
 
 
 

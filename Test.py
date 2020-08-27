@@ -3,13 +3,13 @@ from dataset_WA import get_dataset,get_handler
 import dataset
 from model import get_net
 from torchvision import transforms
-from query_strategies import WAAL, Entropy, Random
+from query_strategies import WAAL, Entropy, Random, SWAAL
 
 NUM_INIT_LB = 2000
 NUM_QUERY   = 2000
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "WAAL"
+QUERY_STRATEGY = "SWAAL"
 
 
 args_pool = {
@@ -86,6 +86,8 @@ elif QUERY_STRATEGY == 'Entropy':
     strategy = Entropy(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
 elif QUERY_STRATEGY == 'Random':
     strategy = Random(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
+elif QUERY_STRATEGY == 'SWAAL':
+    strategy = SWAAL(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 

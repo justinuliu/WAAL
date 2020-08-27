@@ -164,7 +164,7 @@ class WAAL:
                 set_requires_grad(self.dis,requires_grad=False)
 
                 lb_z   = self.fea(label_x)
-                unlb_z = self.fea(unlabel_x)
+                #unlb_z = self.fea(unlabel_x)
 
                 opt_fea.zero_grad()
                 opt_clf.zero_grad()
@@ -176,17 +176,17 @@ class WAAL:
 
 
                 # Wasserstein loss (here is the unbalanced loss, because we used the redundant trick)
-                wassertein_distance = self.dis(unlb_z).mean() - gamma_ratio * self.dis(lb_z).mean()
+                #wassertein_distance = self.dis(unlb_z).mean() - gamma_ratio * self.dis(lb_z).mean()
 
 
-                with torch.no_grad():
+                # with torch.no_grad():
+                #
+                #     lb_z = self.fea(label_x)
+                #     unlb_z = self.fea(unlabel_x)
 
-                    lb_z = self.fea(label_x)
-                    unlb_z = self.fea(unlabel_x)
+                # = gradient_penalty(self.dis, unlb_z, lb_z)
 
-                gp = gradient_penalty(self.dis, unlb_z, lb_z)
-
-                loss = pred_loss + alpha * wassertein_distance + alpha * gp * 5
+                loss = pred_loss #+ alpha * wassertein_distance + alpha * gp * 5
                 # for CIFAR10 the gradient penality is 5
                 # for SVHN the gradient penality is 2
 

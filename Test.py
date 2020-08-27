@@ -16,7 +16,8 @@ QUERY_STRATEGY = "WAAL"
 
 args_pool = {
             'FashionMNIST':
-                {'transform': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
+                {'transform_tr': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
+                 'transform_te': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
                  'loader_tr_args':{'batch_size': 64, 'num_workers': 1},
                  'loader_te_args':{'batch_size': 1000, 'num_workers': 1},
                  'optimizer_args':{'lr': 0.01, 'momentum': 0.5},

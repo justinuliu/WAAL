@@ -3,12 +3,10 @@ from dataset_WA import get_dataset,get_handler
 import dataset
 from model import get_net
 from torchvision import transforms
-import torch
-from query_strategies import WAAL
+from query_strategies import WAAL, Entropy, Random
 
-
-NUM_INIT_LB = 1000
-NUM_QUERY   = 1000
+NUM_INIT_LB = 2000
+NUM_QUERY   = 2000
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
 QUERY_STRATEGY = "WAAL"
@@ -67,7 +65,7 @@ print('number of testing pool: {}'.format(n_test))
 
 # setting training parameters
 alpha = 1e-2
-epoch = 8
+epoch = 80
 
 # Generate the initial labeled pool
 idxs_lb = np.zeros(n_pool, dtype=bool)
@@ -82,8 +80,14 @@ net_fea, net_clf, net_dis = get_net(DATA_NAME)
 train_handler = get_handler(DATA_NAME)
 test_handler  = dataset.get_handler(DATA_NAME)
 
-strategy = WAAL(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
-
+if QUERY_STRATEGY == 'WAAL':
+    strategy = WAAL(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
+elif QUERY_STRATEGY == 'Entropy':
+    strategy = Entropy(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
+elif QUERY_STRATEGY == 'Random':
+    strategy = Random(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
+else:
+    raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 
 # print information
 print(DATA_NAME)
@@ -102,7 +106,7 @@ for rd in range(1,NUM_ROUND+1):
     print('================Round {:d}==============='.format(rd))
 
     #epoch += 5
-    q_idxs = strategy.query(NUM_QUERY, QUERY_STRATEGY)
+    q_idxs = strategy.query(NUM_QUERY)
     idxs_lb[q_idxs] = True
 
     # update

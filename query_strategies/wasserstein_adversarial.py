@@ -5,7 +5,6 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.autograd import grad
 import math
-import torch.distributions as distributions
 
 
 # setting gradient values
@@ -144,13 +143,13 @@ class WAAL:
             self.dis.train()
 
 
-            # Total_loss = 0
-            # n_batch    = 0
-            # acc        = 0
+            Total_loss = 0
+            n_batch    = 0
+            acc        = 0
 
             for index, label_x, label_y, unlabel_x, _ in loader_tr:
 
-                # n_batch += 1
+                n_batch += 1
 
 
                 label_x, label_y = label_x.cuda(), label_y.cuda()
@@ -164,7 +163,7 @@ class WAAL:
                 set_requires_grad(self.dis,requires_grad=False)
 
                 lb_z   = self.fea(label_x)
-                #unlb_z = self.fea(unlabel_x)
+                unlb_z = self.fea(unlabel_x)
 
                 opt_fea.zero_grad()
                 opt_clf.zero_grad()
@@ -176,17 +175,17 @@ class WAAL:
 
 
                 # Wasserstein loss (here is the unbalanced loss, because we used the redundant trick)
-                #wassertein_distance = self.dis(unlb_z).mean() - gamma_ratio * self.dis(lb_z).mean()
+                wassertein_distance = self.dis(unlb_z).mean() - gamma_ratio * self.dis(lb_z).mean()
 
 
-                # with torch.no_grad():
-                #
-                #     lb_z = self.fea(label_x)
-                #     unlb_z = self.fea(unlabel_x)
+                with torch.no_grad():
 
-                # = gradient_penalty(self.dis, unlb_z, lb_z)
+                    lb_z = self.fea(label_x)
+                    unlb_z = self.fea(unlabel_x)
 
-                loss = pred_loss #+ alpha * wassertein_distance + alpha * gp * 5
+                gp = gradient_penalty(self.dis, unlb_z, lb_z)
+
+                loss = pred_loss + alpha * wassertein_distance + alpha * gp * 5
                 # for CIFAR10 the gradient penality is 5
                 # for SVHN the gradient penality is 2
 
@@ -224,16 +223,16 @@ class WAAL:
 
 
                 # prediction and computing training accuracy and empirical loss under evaluation mode
-                # P = lb_out.max(1)[1]
-                # acc += 1.0 * (label_y == P).sum().item() / len(label_y)
-                # Total_loss += loss.item()
+                P = lb_out.max(1)[1]
+                acc += 1.0 * (label_y == P).sum().item() / len(label_y)
+                Total_loss += loss.item()
 
-            # Total_loss /= n_batch
-            # acc        /= n_batch
+            Total_loss /= n_batch
+            acc        /= n_batch
 
             print('==========Inner epoch {:d} ========'.format(epoch))
-            # print('Training Loss {:.3f}'.format(Total_loss))
-            # print('Training accuracy {:.3f}'.format(acc*100))
+            print('Training Loss {:.3f}'.format(Total_loss))
+            print('Training accuracy {:.3f}'.format(acc*100))
 
 
 
@@ -357,7 +356,7 @@ class WAAL:
         return value
 
 
-    def query(self,query_num, strategy="WAAL"):
+    def query(self,query_num):
 
         """
         adversarial query strategy
@@ -396,15 +395,8 @@ class WAAL:
 
         # sort the score with minimal query_number examples
         # expected value outputs from smaller to large
-        if "Random" in strategy:
-            return idxs_unlabeled[torch.randperm(total_score.shape[0])[:query_num]]
-        elif "Entropy" in strategy:
-            entropy_score = distributions.categorical.Categorical(probs).entropy()
-            return idxs_unlabeled[entropy_score.sort(descending=True)[1][:query_num]]
-        elif "WAAL" in strategy:
-            return idxs_unlabeled[total_score.sort()[1][:query_num]]
-        else:
-            raise Exception
+
+        return idxs_unlabeled[total_score.sort()[1][:query_num]]
 
 
 

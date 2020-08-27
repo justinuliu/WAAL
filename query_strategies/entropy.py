@@ -190,7 +190,7 @@ class Entropy:
 
         return probs
 
-    def query(self, query_num, _):
+    def query(self, query_num):
 
         idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
 

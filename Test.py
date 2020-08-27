@@ -24,8 +24,8 @@ args_pool = {
                  'num_class': 10},
             'SVHN':
                 {'transform_tr': transforms.Compose([ 
-                                                 transforms.RandomCrop(size = 32, padding=4),
-                                                 transforms.RandomHorizontalFlip(),
+                                                 #transforms.RandomCrop(size = 32, padding=4),
+                                                 #transforms.RandomHorizontalFlip(),
                                                  transforms.ToTensor(),
                                                  transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))]),
                  'transform_te': transforms.Compose([transforms.ToTensor(), 
@@ -36,8 +36,8 @@ args_pool = {
                  'num_class': 10},
             'CIFAR10':
                 {'transform_tr': transforms.Compose([ 
-                                                 transforms.RandomCrop(size = 32, padding=4),
-                                                 transforms.RandomHorizontalFlip(),
+                                                 # transforms.RandomCrop(size = 32, padding=4),
+                                                 # transforms.RandomHorizontalFlip(),
                                                  transforms.ToTensor(),
                                                  transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]),
                  'transform_te': transforms.Compose([transforms.ToTensor(), 
@@ -66,7 +66,7 @@ print('number of unlabeled pool: {}'.format(n_pool - NUM_INIT_LB))
 print('number of testing pool: {}'.format(n_test))
 
 # setting training parameters
-alpha = 2e-3
+alpha = 1e-2
 epoch = 8
 
 # Generate the initial labeled pool
@@ -91,7 +91,7 @@ print(DATA_NAME)
 print(type(strategy).__name__)
 
 # round 0 accuracy
-strategy.train(alpha=alpha, total_epoch= epoch)
+strategy.train(alpha=alpha, total_epoch=epoch)
 P = strategy.predict(X_te,Y_te)
 acc = np.zeros(NUM_ROUND+1)
 acc[0] = 1.0 * (Y_te==P).sum().item() / len(Y_te)

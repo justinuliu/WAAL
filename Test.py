@@ -9,7 +9,7 @@ NUM_INIT_LB = 2000
 NUM_QUERY   = 2000
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "SWAAL"
+QUERY_STRATEGY = "SWAAL" # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 
 args_pool = {

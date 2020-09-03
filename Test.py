@@ -1,7 +1,7 @@
 import numpy as np
 from dataset_WA import get_dataset,get_handler
 import dataset
-from model import get_net
+from model_WA import get_net
 from torchvision import transforms
 from query_strategies import WAAL, Entropy, Random, SWAAL
 

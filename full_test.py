@@ -30,8 +30,8 @@ elif DATA_NAME == "SVHN":
     NUM_INIT_LB = 1000
     NUM_QUERY = 1000
     NUM_ROUND = 5
-    epoch = 1000
-    incre = 0
+    epoch = 20
+    incre = 5
 
 elif DATA_NAME == "CIFAR10":
     NUM_INIT_LB = 2000

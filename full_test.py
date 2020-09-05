@@ -42,11 +42,12 @@ elif DATA_NAME == "CIFAR10":
 
 args_pool = {
     'FashionMNIST':
-        {'transform': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
+        {'transform_tr': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
+         'transform_te': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
          'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
          'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
          'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
-         'num_class': 10},
+         'num_class': 10, },
     'SVHN':
         {'transform_tr': transforms.Compose([
             # transforms.RandomCrop(size=32, padding=4),

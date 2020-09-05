@@ -5,3 +5,4 @@ from .random import Random
 from .waal_no_semi import SWAAL
 from .entropy_sampling import EntropySampling
 from .entropy_sampling import Semi_EntropySampling
+from .waal_with_fixmatch import WAALFixMatch

@@ -8,3 +8,4 @@ from .entropy_sampling import Semi_EntropySampling
 from .waal_with_fixmatch import WAALFixMatch
 from .waaluncertainty import WAALUncertainty
 from .farthest_first import FarthestFirst
+from .entropy_with_fixmatch import FixMatchEntropy

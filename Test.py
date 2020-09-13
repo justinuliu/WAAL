@@ -3,14 +3,15 @@ from dataset_WA import get_dataset,get_handler
 import dataset
 from model_WA import get_net
 from torchvision import transforms
-from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUncertainty, FarthestFirst, FixMatchEntropy
+from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUncertainty, FarthestFirst, \
+    FixMatchEntropy, FixMatchRandom
 from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST
 
 NUM_INIT_LB = 2000
 NUM_QUERY   = 2000
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "FixMatchEntropy"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+QUERY_STRATEGY = "FixMatchRandom"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 
 args_pool = {
@@ -72,7 +73,7 @@ print('number of testing pool: {}'.format(n_test))
 
 # setting training parameters
 alpha = 1e-2
-epoch = 300
+epoch = 80
 
 # Generate the initial labeled pool
 idxs_lb = np.zeros(n_pool, dtype=bool)
@@ -103,6 +104,8 @@ elif QUERY_STRATEGY == 'FF':
     strategy = FarthestFirst(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchEntropy':
     strategy = FixMatchEntropy(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchRandom':
+    strategy = FixMatchRandom(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 

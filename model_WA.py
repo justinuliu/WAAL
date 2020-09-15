@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
+
 def get_net(name):
 
 
@@ -33,7 +34,8 @@ class Net1_fea(nn.Module):
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
         x = x.view(-1, 320)
 
-        return  x
+        return x
+
 
 class Net1_clf(nn.Module):
     """
@@ -57,6 +59,7 @@ class Net1_clf(nn.Module):
     def get_embedding_dim(self):
 
         return 50
+
 
 class Net1_dis(nn.Module):
 

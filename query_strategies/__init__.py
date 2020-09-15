@@ -10,3 +10,5 @@ from .waaluncertainty import WAALUncertainty
 from .farthest_first import FarthestFirst
 from .entropy_with_fixmatch import FixMatchEntropy
 from .random_with_fixmatch import FixMatchRandom
+from .self_training_entropy import EntropySelfTraining
+from .farthest_first_entropy import FarthestFirstEntropy

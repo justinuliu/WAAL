@@ -63,6 +63,8 @@ args_pool = {
                 },
             }
 
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 def stratified_split_dataset(targets, num_labelled_samples, num_classes, seed=None, random=False):
     labelled_indices = []

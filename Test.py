@@ -6,12 +6,12 @@ import dataset
 from model_WA import get_net
 from torchvision import transforms
 from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUncertainty, FarthestFirst, \
-    FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy
+    FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling
 from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST
 
 
-NUM_INIT_LB = 2000
-NUM_QUERY   = 2000
+NUM_INIT_LB = 100
+NUM_QUERY   = 100
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
 QUERY_STRATEGY = "FFEntropy"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
@@ -153,6 +153,8 @@ elif QUERY_STRATEGY == 'SelfTrainingEntropy':
     strategy = EntropySelfTraining(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FFEntropy':
     strategy = FarthestFirstEntropy(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'DAL':
+    strategy = DiscriminativeRepresentationSampling(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 

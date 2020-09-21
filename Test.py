@@ -6,7 +6,8 @@ import dataset
 from model_WA import get_net
 from torchvision import transforms
 from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUncertainty, FarthestFirst, \
-    FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling
+    FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling, \
+    LeastConfidence, FixMatchLeastConfidence
 from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST
 
 
@@ -14,7 +15,7 @@ NUM_INIT_LB = 100
 NUM_QUERY   = 100
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "FFEntropy"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+QUERY_STRATEGY = "FixMatchLeastConfidence"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 
 args_pool = {
@@ -155,6 +156,10 @@ elif QUERY_STRATEGY == 'FFEntropy':
     strategy = FarthestFirstEntropy(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'DAL':
     strategy = DiscriminativeRepresentationSampling(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'LeastConfidence':
+    strategy = LeastConfidence(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchLeastConfidence':
+    strategy = FixMatchLeastConfidence(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 
@@ -171,6 +176,8 @@ acc = np.zeros(NUM_ROUND+1)
 acc[0] = 1.0 * (Y_te==P).sum().item() / len(Y_te)
 print('Round 0\ntesting accuracy {:.3f}'.format(acc[0]))
 
+query_count = np.zeros(args['num_class'])
+
 for rd in range(1,NUM_ROUND+1):
 
     print('================Round {:d}==============='.format(rd))
@@ -178,7 +185,7 @@ for rd in range(1,NUM_ROUND+1):
     #epoch += 5
     q_idxs = strategy.query(NUM_QUERY)
     idxs_lb[q_idxs] = True
-
+    query_count += np.unique(Y_tr[q_idxs], return_counts=True)[1]
     # update
     strategy.update(idxs_lb)
     torch.manual_seed(args['seed'])
@@ -194,4 +201,5 @@ for rd in range(1,NUM_ROUND+1):
 # print('SEED {}'.format(SEED))
 print(type(strategy).__name__)
 print(acc)
+print(query_count)
 

@@ -13,3 +13,5 @@ from .random_with_fixmatch import FixMatchRandom
 from .self_training_entropy import EntropySelfTraining
 from .farthest_first_entropy import FarthestFirstEntropy
 from .discriminative_representation_sampling import DiscriminativeRepresentationSampling
+from .least_confidence import LeastConfidence
+from .least_confidence_fixmatch import FixMatchLeastConfidence

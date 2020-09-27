@@ -15,3 +15,6 @@ from .farthest_first_entropy import FarthestFirstEntropy
 from .discriminative_representation_sampling import DiscriminativeRepresentationSampling
 from .least_confidence import LeastConfidence
 from .least_confidence_fixmatch import FixMatchLeastConfidence
+from .umap_plot import UmapPlot
+from .KL_Div import KLDiv
+

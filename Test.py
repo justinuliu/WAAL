@@ -7,15 +7,15 @@ from model_WA import get_net
 from torchvision import transforms
 from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUncertainty, FarthestFirst, \
     FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling, \
-    LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv
+    LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv, FixMatchKLDiv
 from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST
 
 
-NUM_INIT_LB = 2000
-NUM_QUERY   = 2000
+NUM_INIT_LB = 100
+NUM_QUERY   = 100
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "KLDiv"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+QUERY_STRATEGY = "Entropy"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 
 args_pool = {
@@ -164,6 +164,8 @@ elif QUERY_STRATEGY == 'Umap':
     strategy = UmapPlot(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'KLDiv':
     strategy = KLDiv(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchKLDiv':
+    strategy = FixMatchKLDiv(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 
@@ -181,7 +183,7 @@ acc[0] = 1.0 * (Y_te==P).sum().item() / len(Y_te)
 print('Round 0\ntesting accuracy {:.3f}'.format(acc[0]))
 
 query_count = np.zeros(args['num_class'])
-query_list = np.empty(0, dtype=np.int)
+query_list = np.zeros((NUM_ROUND, NUM_QUERY), dtype=np.int)
 
 for rd in range(1,NUM_ROUND+1):
 
@@ -192,7 +194,7 @@ for rd in range(1,NUM_ROUND+1):
     idxs_lb[q_idxs] = True
     count = np.count_nonzero(idxs_lb)
     assert count == NUM_INIT_LB + NUM_QUERY * rd
-    query_list = np.concatenate((query_list, q_idxs))
+    query_list[rd-1] = q_idxs
     # update
     strategy.update(idxs_lb)
     torch.manual_seed(args['seed'])
@@ -203,11 +205,13 @@ for rd in range(1,NUM_ROUND+1):
     acc[rd] = 1.0 * (Y_te == P).sum().item()/len(Y_te)
     print('Accuracy {:.3f}'.format(acc[rd]))
 
-query_count += np.unique(Y_tr[query_list], return_counts=True)[1]
+for list in query_list:
+    count = np.unique(Y_tr[list], return_counts=True)
+    query_count[count[0]] += count[1]
 # print final results for each round
 # print('SEED {}'.format(SEED))
 print(type(strategy).__name__)
 print(acc)
 print(query_count)
-np.save('data/query_list.npy', np.array(query_list))
+np.save('data/query_list_'+QUERY_STRATEGY+'.npy', np.array(query_list))
 

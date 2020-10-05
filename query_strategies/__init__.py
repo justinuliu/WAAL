@@ -20,4 +20,4 @@ from .KL_Div import KLDiv
 from .KL_Div_with_FixMatch import FixMatchKLDiv
 from .discriminator import Discriminate
 from .dis_entropy_mixture import DisEntropyMixture
-
+from .dis_entropy_mixture_with_fixmatch import FixMatchDisEntropyMixture

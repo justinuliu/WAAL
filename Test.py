@@ -8,7 +8,7 @@ from torchvision import transforms
 from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUncertainty, FarthestFirst, \
     FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling, \
     LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv, FixMatchKLDiv, Discriminate, DisEntropyMixture, \
-    FixMatchDisEntropyMixture
+    FixMatchDisEntropyMixture, FixMatchDis
 from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST
 
 
@@ -16,7 +16,7 @@ NUM_INIT_LB = 100
 NUM_QUERY   = 100
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "FixMatchDisEntropyMixture"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+QUERY_STRATEGY = "FixMatchDis"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 
 args_pool = {
@@ -169,6 +169,8 @@ elif QUERY_STRATEGY == 'FixMatchKLDiv':
     strategy = FixMatchKLDiv(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'Dis':
     strategy = Discriminate(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchDis':
+    strategy = FixMatchDis(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'DisEntropyMixture':
     strategy = DisEntropyMixture(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchDisEntropyMixture':

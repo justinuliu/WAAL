@@ -229,7 +229,7 @@ class FixMatchDis:
         self.clf.eval()
         discriminator.train()
         # Training Discriminator
-        for e in range(10):
+        for e in range(self.args['epochs_dis']):
             for index, label_x, _, unlabel_x, _ in loader_tr:
                 label_x, unlabel_x = label_x.to(self.device), unlabel_x.to(self.device)
                 mu = self.fea(label_x)

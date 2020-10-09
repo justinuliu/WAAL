@@ -16,54 +16,61 @@ NUM_INIT_LB = 100
 NUM_QUERY   = 100
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "FixMatchDis"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
-
+QUERY_STRATEGY = "FixMatchDisEntropyMixture"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 args_pool = {
-            'FashionMNIST':
-                {'transform_tr': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
-                 'transform_te': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
-                 'loader_tr_args':{'batch_size': 64, 'num_workers': 1},
-                 'loader_te_args':{'batch_size': 1000, 'num_workers': 1},
-                 'optimizer_args':{'lr': 0.01, 'momentum': 0.5},
-                 'num_class': 10,
-                 'transform_fix': TransformFixFashionMNIST((0.1307,), (0.3081,)),
-                 'threshold': 0.95,
-                 'seed': 1,
-                 },
-            'SVHN':
-                {'transform_tr': transforms.Compose([ 
-                                                 #transforms.RandomCrop(size = 32, padding=4),
-                                                 #transforms.RandomHorizontalFlip(),
-                                                 transforms.ToTensor(),
-                                                 transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))]),
-                 'transform_te': transforms.Compose([transforms.ToTensor(), 
-                                                    transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))]),
-                 'loader_tr_args':{'batch_size': 64, 'num_workers': 1},
-                 'loader_te_args':{'batch_size': 1000, 'num_workers': 1},
-                 'optimizer_args':{'lr': 0.01, 'momentum': 0.5},
-                 'num_class': 10,
-                 'transform_fix': TransformFixSVHN((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
-                 'threshold': 0.95,
-                 'seed': 1,
-                },
-            'CIFAR10':
-                {'transform_tr': transforms.Compose([ 
-                                                 # transforms.RandomCrop(size = 32, padding=4),
-                                                 # transforms.RandomHorizontalFlip(),
-                                                 transforms.ToTensor(),
-                                                 transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]),
-                 'transform_te': transforms.Compose([transforms.ToTensor(), 
-                                                    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]),
-                 'loader_tr_args':{'batch_size': 64, 'num_workers': 1},
-                 'loader_te_args':{'batch_size': 1000, 'num_workers': 1},
-                 'optimizer_args':{'lr': 0.01, 'momentum': 0.3},
-                 'num_class': 10,
-                 'transform_fix': TransformFixCIFAR((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
-                 'threshold': 0.95,
-                 'seed': 1,
-                },
-            }
+    'FashionMNIST':
+        {
+            'transform_tr': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
+            'transform_te': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
+            'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
+            'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
+            'num_class': 10,
+            'transform_fix': TransformFixFashionMNIST((0.1307,), (0.3081,)),
+            'threshold': 0.95,
+            'seed': 1,
+            'epochs_dis': 10,
+        },
+    'SVHN':
+        {
+            'transform_tr': transforms.Compose([
+                # transforms.RandomCrop(size = 32, padding=4),
+                # transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))]),
+            'transform_te': transforms.Compose([transforms.ToTensor(),
+                                                transforms.Normalize((0.4377, 0.4438, 0.4728),
+                                                                     (0.1980, 0.2010, 0.1970))]),
+            'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
+            'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
+            'num_class': 10,
+            'transform_fix': TransformFixSVHN((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
+            'threshold': 0.95,
+            'seed': 1,
+            'epochs_dis': 10,
+        },
+    'CIFAR10':
+        {
+            'transform_tr': transforms.Compose([
+                # transforms.RandomCrop(size = 32, padding=4),
+                # transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]),
+            'transform_te': transforms.Compose([transforms.ToTensor(),
+                                                transforms.Normalize((0.4914, 0.4822, 0.4465),
+                                                                     (0.2470, 0.2435, 0.2616))]),
+            'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
+            'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.3},
+            'num_class': 10,
+            'transform_fix': TransformFixCIFAR((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
+            'threshold': 0.95,
+            'seed': 1,
+            'epochs_dis': 10,
+        },
+}
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False

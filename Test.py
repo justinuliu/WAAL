@@ -8,7 +8,7 @@ from torchvision import transforms
 from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUncertainty, FarthestFirst, \
     FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling, \
     LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv, FixMatchKLDiv, Discriminate, DisEntropyMixture, \
-    FixMatchDisEntropyMixture, FixMatchDis
+    FixMatchDisEntropyMixture, FixMatchDis, DisEntropyCombined
 from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST
 
 
@@ -175,6 +175,8 @@ elif QUERY_STRATEGY == 'DisEntropyMixture':
     strategy = DisEntropyMixture(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchDisEntropyMixture':
     strategy = FixMatchDisEntropyMixture(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'DisEntropyCombined':
+    strategy = DisEntropyCombined(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 

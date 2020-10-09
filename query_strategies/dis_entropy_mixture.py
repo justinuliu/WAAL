@@ -231,7 +231,7 @@ class DisEntropyMixture:
                 sys.stdout.write('Current discriminator model loss: {:.4f}'.format(dsc_loss.item()))
 
         # Querying
-        query_num_part = int(query_num * 0.6)
+        query_num_part = int(query_num * 0.2)
         discriminator.eval()
         loader_te = DataLoader(self.test_handler(self.X[idx_ulb_train], self.Y[idx_ulb_train], transform=self.args['transform_te']),
                                shuffle=False, **self.args['loader_te_args'])

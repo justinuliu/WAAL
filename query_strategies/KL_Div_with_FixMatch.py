@@ -4,14 +4,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import math
-import torch.nn as nn
-import sys
+import torch.distributions as distributions
 
 
 # setting gradient values
-from model_WA import Discriminator
-
-
 def set_requires_grad(model, requires_grad=True):
     """
     Used in training adversarial approach
@@ -35,7 +31,7 @@ def learning_rate(init, epoch, total_epoch):
     return init * math.pow(0.1, optimal_factor)
 
 
-class FixMatchDis:
+class FixMatchKLDiv:
 
     def __init__(self, X, Y, idx_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args):
         """
@@ -217,52 +213,33 @@ class FixMatchDis:
         return probs
 
     def query(self, query_num):
-        # setting idx_lb and idx_ulb
-        idx_lb_train = np.arange(self.n_pool)[self.idx_lb]
-        idx_ulb_train = np.arange(self.n_pool)[~self.idx_lb]
-        discriminator = Discriminator(512).to(self.device)
-        loader_tr = DataLoader(self.train_handler(self.X[idx_lb_train],self.Y[idx_lb_train],self.X[idx_ulb_train],self.Y[idx_ulb_train],
-                                            transform = self.args['transform_tr']), shuffle= True, **self.args['loader_tr_args'])
-        bce_loss = nn.BCELoss()
-        optim_discriminator = optim.Adam(discriminator.parameters(), lr=5e-4)
-        self.fea.eval()
-        self.clf.eval()
-        discriminator.train()
-        # Training Discriminator
-        for e in range(10):
-            for index, label_x, _, unlabel_x, _ in loader_tr:
-                label_x, unlabel_x = label_x.to(self.device), unlabel_x.to(self.device)
-                mu = self.fea(label_x)
-                unlab_mu = self.fea(unlabel_x)
 
-                labeled_preds = discriminator(mu)
-                unlabeled_preds = discriminator(unlab_mu)
-
-                lab_real_preds = torch.ones(label_x.size(0))
-                unlab_fake_preds = torch.zeros(unlabel_x.size(0))
-
-                lab_real_preds = lab_real_preds.to(self.device)
-                unlab_fake_preds = unlab_fake_preds.to(self.device)
-
-                dsc_loss = bce_loss(labeled_preds, lab_real_preds) + bce_loss(unlabeled_preds, unlab_fake_preds)
-                optim_discriminator.zero_grad()
-                dsc_loss.backward()
-                optim_discriminator.step()
-                sys.stdout.write('\r')
-                sys.stdout.write('Current discriminator model loss: {:.4f}'.format(dsc_loss.item()))
-
-        # Querying
-        discriminator.eval()
-        loader_te = DataLoader(self.test_handler(self.X[idx_ulb_train], self.Y[idx_ulb_train], transform=self.args['transform_te']),
+        loader_te = DataLoader(self.test_handler(self.X, self.Y, transform=self.args['transform_te']),
                                shuffle=False, **self.args['loader_te_args'])
-        repr_probs = torch.zeros(len(idx_ulb_train))
-        with torch.no_grad():
-            for x, _, idxs in loader_te:
-                x = x.to(self.device)
-                latent = self.fea(x)
-                prob = discriminator(latent)
-                prob = torch.squeeze(prob, dim=1)
-                repr_probs[idxs] = prob.cpu()
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+        self.fea.eval()
 
-        query_repr = idx_ulb_train[repr_probs.sort()[1][:query_num]]
-        return query_repr
+        features = None
+        with torch.no_grad():
+            for x, y, idxs in loader_te:
+                x, y = x.to(self.device), y.to(self.device)
+                latent = self.fea(x)
+                if features is None:
+                    features = latent.cpu()
+                else:
+                    features = torch.cat((features, latent.cpu()))
+
+        fea_lbs = features[self.idx_lb]
+        fea_ulbs = features[~self.idx_lb]
+        div_score = []
+        for f in fea_ulbs:
+            log_f = F.log_softmax(f)
+            t = F.softmax(fea_lbs, dim=1)
+            d = F.kl_div(log_f, t, reduction='none')
+            d = d.sum(dim=1)
+            d = d.min()
+            div_score.append(d.item())
+
+        div_score = torch.tensor(div_score)
+        return idxs_unlabeled[np.argsort(div_score)[:query_num]]
+

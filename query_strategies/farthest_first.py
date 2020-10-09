@@ -208,9 +208,9 @@ class FarthestFirst:
         fea_lbs = features[self.idx_lb]
         fea_ulbs = features[~self.idx_lb]
         dist = []
+        pdist = torch.nn.PairwiseDistance(p=2)
         for f in fea_ulbs:
-            d = fea_lbs - f
-            d = d.norm(p=2, dim=1)
+            d = pdist(f, fea_lbs)
             d = d.min()
             dist.append(d.item())
         idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]

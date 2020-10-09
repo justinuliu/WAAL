@@ -22,3 +22,4 @@ from .discriminator import Discriminate
 from .dis_entropy_mixture import DisEntropyMixture
 from .dis_entropy_mixture_with_fixmatch import FixMatchDisEntropyMixture
 from .dis_with_fixmatch import FixMatchDis
+from .dis_entropy_combined import DisEntropyCombined

@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import math
 import torch.nn as nn
+from torch import distributions
 import sys
 
 
@@ -35,7 +36,7 @@ def learning_rate(init, epoch, total_epoch):
     return init * math.pow(0.1, optimal_factor)
 
 
-class FixMatchDis:
+class DisEntropyCombined:
 
     def __init__(self, X, Y, idx_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args):
         """
@@ -57,7 +58,6 @@ class FixMatchDis:
         self.idx_lb = idx_lb
         self.net_fea = net_fea
         self.net_clf = net_clf
-        self.net_dis = net_dis
         self.train_handler = train_handler
         self.test_handler = test_handler
         self.args = args
@@ -66,9 +66,6 @@ class FixMatchDis:
         self.num_class = self.args['num_class']
         use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda" if use_cuda else "cpu")
-
-        self.selection = 10
-        # for cifar 10 or svhn or fashion mnist  self.selection = 10
 
     def update(self, idx_lb):
 
@@ -83,7 +80,6 @@ class FixMatchDis:
         """
 
         print("[Training] labeled and unlabeled data")
-        # n_epoch = self.args['n_epoch']
         n_epoch = total_epoch
 
         self.fea = self.net_fea().to(self.device)
@@ -91,11 +87,12 @@ class FixMatchDis:
 
         # setting idx_lb and idx_ulb
         idx_lb_train = np.arange(self.n_pool)[self.idx_lb]
-        idx_ulb_train = np.arange(self.n_pool)[~self.idx_lb]
+
+        # Data-loading (Redundant Trick)
 
         loader_tr = DataLoader(
-            self.train_handler(self.X[idx_lb_train], self.Y[idx_lb_train], self.X[idx_ulb_train], self.Y[idx_ulb_train],
-                               transform=self.args['transform_fix']), shuffle=True, **self.args['loader_tr_args'])
+            self.test_handler(self.X[idx_lb_train], self.Y[idx_lb_train],
+                              transform=self.args['transform_tr']), shuffle=True, **self.args['loader_tr_args'])
 
         for epoch in range(n_epoch):
 
@@ -118,12 +115,10 @@ class FixMatchDis:
             n_batch = 0
             acc = 0
 
-            for index, (label_x, _), label_y, (unlabel_x_w, unlabel_x_s), _ in loader_tr:
-
+            for label_x, label_y, index in loader_tr:
                 n_batch += 1
 
                 label_x, label_y = label_x.cuda(), label_y.cuda()
-                unlabel_x_w, unlabel_x_s = unlabel_x_w.cuda(), unlabel_x_s.cuda()
 
                 # training feature extractor and predictor
 
@@ -131,8 +126,6 @@ class FixMatchDis:
                 set_requires_grad(self.clf, requires_grad=True)
 
                 lb_z = self.fea(label_x)
-                unlb_z_w = self.fea(unlabel_x_w)
-                unlb_z_s = self.fea(unlabel_x_s)
 
                 opt_fea.zero_grad()
                 opt_clf.zero_grad()
@@ -140,21 +133,7 @@ class FixMatchDis:
                 lb_out, _ = self.clf(lb_z)
 
                 # prediction loss (deafult we use F.cross_entropy)
-                pred_loss = torch.mean(F.cross_entropy(lb_out, label_y))
-
-                logits_u_w, _ = self.clf(unlb_z_w)
-                logits_u_s, _ = self.clf(unlb_z_s)
-                pseudo_label = torch.softmax(logits_u_w.detach_(), dim=1)
-                max_probs, targets_u = torch.max(pseudo_label, dim=-1)
-                mask = max_probs.ge(self.args['threshold']).float()
-
-                Lu = (F.cross_entropy(logits_u_s, targets_u,
-                                      reduction='none') * mask).mean()
-
-                loss = pred_loss + Lu
-                # for CIFAR10 the gradient penality is 5
-                # for SVHN the gradient penality is 2
-
+                loss = torch.mean(F.cross_entropy(lb_out, label_y))
                 loss.backward()
                 opt_fea.step()
                 opt_clf.step()
@@ -229,7 +208,7 @@ class FixMatchDis:
         self.clf.eval()
         discriminator.train()
         # Training Discriminator
-        for e in range(10):
+        for e in range(5):
             for index, label_x, _, unlabel_x, _ in loader_tr:
                 label_x, unlabel_x = label_x.to(self.device), unlabel_x.to(self.device)
                 mu = self.fea(label_x)
@@ -264,5 +243,23 @@ class FixMatchDis:
                 prob = torch.squeeze(prob, dim=1)
                 repr_probs[idxs] = prob.cpu()
 
-        query_repr = idx_ulb_train[repr_probs.sort()[1][:query_num]]
-        return query_repr
+        dist_score = torch.tensor(repr_probs)
+
+        _, ranking_index = dist_score.sort(descending=True)
+        N = len(ranking_index)
+        ranking_dis = np.zeros(N, dtype=int)
+        for i, index in zip(range(N), ranking_index):
+            ranking_dis[index] = i
+
+        entropy_prob = self.predict_prob(self.X[idx_ulb_train], self.Y[idx_ulb_train])
+        entropy_score = distributions.categorical.Categorical(entropy_prob).entropy()
+
+        _, ranking_index = entropy_score.sort(descending=True)
+        N = len(ranking_index)
+        ranking_entropy = np.zeros(N, dtype=int)
+        for i, index in zip(range(N), ranking_index):
+            ranking_entropy[index] = i
+
+        score_total = ranking_entropy + ranking_dis
+
+        return idx_ulb_train[np.argsort(score_total)[:query_num]]

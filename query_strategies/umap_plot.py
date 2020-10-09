@@ -2,16 +2,13 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import umap
 from torch.utils.data import DataLoader
 import math
-import torch.nn as nn
-import sys
+import matplotlib.pyplot as plt
 
 
 # setting gradient values
-from model_WA import Discriminator
-
-
 def set_requires_grad(model, requires_grad=True):
     """
     Used in training adversarial approach
@@ -35,7 +32,7 @@ def learning_rate(init, epoch, total_epoch):
     return init * math.pow(0.1, optimal_factor)
 
 
-class FixMatchDis:
+class UmapPlot:
 
     def __init__(self, X, Y, idx_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args):
         """
@@ -57,7 +54,6 @@ class FixMatchDis:
         self.idx_lb = idx_lb
         self.net_fea = net_fea
         self.net_clf = net_clf
-        self.net_dis = net_dis
         self.train_handler = train_handler
         self.test_handler = test_handler
         self.args = args
@@ -66,9 +62,6 @@ class FixMatchDis:
         self.num_class = self.args['num_class']
         use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda" if use_cuda else "cpu")
-
-        self.selection = 10
-        # for cifar 10 or svhn or fashion mnist  self.selection = 10
 
     def update(self, idx_lb):
 
@@ -83,7 +76,6 @@ class FixMatchDis:
         """
 
         print("[Training] labeled and unlabeled data")
-        # n_epoch = self.args['n_epoch']
         n_epoch = total_epoch
 
         self.fea = self.net_fea().to(self.device)
@@ -91,11 +83,12 @@ class FixMatchDis:
 
         # setting idx_lb and idx_ulb
         idx_lb_train = np.arange(self.n_pool)[self.idx_lb]
-        idx_ulb_train = np.arange(self.n_pool)[~self.idx_lb]
+
+        # Data-loading (Redundant Trick)
 
         loader_tr = DataLoader(
-            self.train_handler(self.X[idx_lb_train], self.Y[idx_lb_train], self.X[idx_ulb_train], self.Y[idx_ulb_train],
-                               transform=self.args['transform_fix']), shuffle=True, **self.args['loader_tr_args'])
+            self.test_handler(self.X[idx_lb_train], self.Y[idx_lb_train],
+                              transform=self.args['transform_tr']), shuffle=True, **self.args['loader_tr_args'])
 
         for epoch in range(n_epoch):
 
@@ -118,12 +111,10 @@ class FixMatchDis:
             n_batch = 0
             acc = 0
 
-            for index, (label_x, _), label_y, (unlabel_x_w, unlabel_x_s), _ in loader_tr:
-
+            for label_x, label_y, index in loader_tr:
                 n_batch += 1
 
                 label_x, label_y = label_x.cuda(), label_y.cuda()
-                unlabel_x_w, unlabel_x_s = unlabel_x_w.cuda(), unlabel_x_s.cuda()
 
                 # training feature extractor and predictor
 
@@ -131,8 +122,6 @@ class FixMatchDis:
                 set_requires_grad(self.clf, requires_grad=True)
 
                 lb_z = self.fea(label_x)
-                unlb_z_w = self.fea(unlabel_x_w)
-                unlb_z_s = self.fea(unlabel_x_s)
 
                 opt_fea.zero_grad()
                 opt_clf.zero_grad()
@@ -140,21 +129,7 @@ class FixMatchDis:
                 lb_out, _ = self.clf(lb_z)
 
                 # prediction loss (deafult we use F.cross_entropy)
-                pred_loss = torch.mean(F.cross_entropy(lb_out, label_y))
-
-                logits_u_w, _ = self.clf(unlb_z_w)
-                logits_u_s, _ = self.clf(unlb_z_s)
-                pseudo_label = torch.softmax(logits_u_w.detach_(), dim=1)
-                max_probs, targets_u = torch.max(pseudo_label, dim=-1)
-                mask = max_probs.ge(self.args['threshold']).float()
-
-                Lu = (F.cross_entropy(logits_u_s, targets_u,
-                                      reduction='none') * mask).mean()
-
-                loss = pred_loss + Lu
-                # for CIFAR10 the gradient penality is 5
-                # for SVHN the gradient penality is 2
-
+                loss = torch.mean(F.cross_entropy(lb_out, label_y))
                 loss.backward()
                 opt_fea.step()
                 opt_clf.step()
@@ -170,6 +145,34 @@ class FixMatchDis:
             print('==========Inner epoch {:d} ========'.format(epoch))
             print('Training Loss {:.3f}'.format(Total_loss))
             print('Training accuracy {:.3f}'.format(acc * 100))
+        self.plot(self.X, self.Y)
+
+    def plot(self, X, Y):
+        loader_te = DataLoader(self.test_handler(X, Y, transform=self.args['transform_te']),
+                               shuffle=False, **self.args['loader_te_args'])
+        self.fea.eval()
+
+        features = None
+        with torch.no_grad():
+            for x, y, idxs in loader_te:
+                x, y = x.to(self.device), y.to(self.device)
+                latent = self.fea(x)
+                if features is None:
+                    features = latent.cpu()
+                else:
+                    features = torch.cat((features, latent.cpu()))
+
+        features_file_name = 'data/features.npy'
+        targets_file_name = 'data/targets.npy'
+        np.save(features_file_name, features)
+        np.save(targets_file_name, Y)
+
+        embedding = umap.UMAP(n_neighbors=5, min_dist=0.05).fit_transform(features)
+        plt.scatter(embedding[:, 0], embedding[:, 1], c=Y, cmap='Spectral', s=1)
+        plt.gca().set_aspect('equal', 'datalim')
+        plt.colorbar(boundaries=np.arange(11) - 0.5).set_ticks(np.arange(10))
+        plt.title('UMAP projection of the CIFAR-10 dataset', fontsize=24)
+        plt.show()
 
     def predict(self, X, Y):
 
@@ -217,52 +220,5 @@ class FixMatchDis:
         return probs
 
     def query(self, query_num):
-        # setting idx_lb and idx_ulb
-        idx_lb_train = np.arange(self.n_pool)[self.idx_lb]
-        idx_ulb_train = np.arange(self.n_pool)[~self.idx_lb]
-        discriminator = Discriminator(512).to(self.device)
-        loader_tr = DataLoader(self.train_handler(self.X[idx_lb_train],self.Y[idx_lb_train],self.X[idx_ulb_train],self.Y[idx_ulb_train],
-                                            transform = self.args['transform_tr']), shuffle= True, **self.args['loader_tr_args'])
-        bce_loss = nn.BCELoss()
-        optim_discriminator = optim.Adam(discriminator.parameters(), lr=5e-4)
-        self.fea.eval()
-        self.clf.eval()
-        discriminator.train()
-        # Training Discriminator
-        for e in range(10):
-            for index, label_x, _, unlabel_x, _ in loader_tr:
-                label_x, unlabel_x = label_x.to(self.device), unlabel_x.to(self.device)
-                mu = self.fea(label_x)
-                unlab_mu = self.fea(unlabel_x)
+        return []
 
-                labeled_preds = discriminator(mu)
-                unlabeled_preds = discriminator(unlab_mu)
-
-                lab_real_preds = torch.ones(label_x.size(0))
-                unlab_fake_preds = torch.zeros(unlabel_x.size(0))
-
-                lab_real_preds = lab_real_preds.to(self.device)
-                unlab_fake_preds = unlab_fake_preds.to(self.device)
-
-                dsc_loss = bce_loss(labeled_preds, lab_real_preds) + bce_loss(unlabeled_preds, unlab_fake_preds)
-                optim_discriminator.zero_grad()
-                dsc_loss.backward()
-                optim_discriminator.step()
-                sys.stdout.write('\r')
-                sys.stdout.write('Current discriminator model loss: {:.4f}'.format(dsc_loss.item()))
-
-        # Querying
-        discriminator.eval()
-        loader_te = DataLoader(self.test_handler(self.X[idx_ulb_train], self.Y[idx_ulb_train], transform=self.args['transform_te']),
-                               shuffle=False, **self.args['loader_te_args'])
-        repr_probs = torch.zeros(len(idx_ulb_train))
-        with torch.no_grad():
-            for x, _, idxs in loader_te:
-                x = x.to(self.device)
-                latent = self.fea(x)
-                prob = discriminator(latent)
-                prob = torch.squeeze(prob, dim=1)
-                repr_probs[idxs] = prob.cpu()
-
-        query_repr = idx_ulb_train[repr_probs.sort()[1][:query_num]]
-        return query_repr

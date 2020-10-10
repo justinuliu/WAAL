@@ -16,7 +16,7 @@ NUM_INIT_LB = 100
 NUM_QUERY   = 100
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "FixMatchDisEntropyMixture"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+QUERY_STRATEGY = "Dis"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 args_pool = {
     'FashionMNIST':
@@ -128,7 +128,7 @@ print('number of testing pool: {}'.format(n_test))
 
 # setting training parameters
 alpha = 1e-2
-epoch = 80
+epoch = 300
 
 # Generate the initial labeled pool
 idxs_lb = stratified_split_dataset(Y_tr, NUM_INIT_LB, args['num_class'], seed=args['seed'])

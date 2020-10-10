@@ -228,6 +228,7 @@ class FixMatchDisEntropyMixture:
         discriminator.train()
         # Training Discriminator
         for e in range(self.args['epochs_dis']):
+            total_loss = 0.
             for index, label_x, _, unlabel_x, _ in loader_tr:
                 label_x, unlabel_x = label_x.to(self.device), unlabel_x.to(self.device)
                 mu = self.fea(label_x)
@@ -246,8 +247,8 @@ class FixMatchDisEntropyMixture:
                 optim_discriminator.zero_grad()
                 dsc_loss.backward()
                 optim_discriminator.step()
-                sys.stdout.write('\r')
-                sys.stdout.write('Current discriminator model loss: {:.8f}'.format(dsc_loss.item()))
+            sys.stdout.write('\r')
+            sys.stdout.write('Current discriminator model loss: {:.8f}'.format(total_loss / len(loader_tr)))
             sys.stdout.write('\n')
 
         # Querying

@@ -202,12 +202,13 @@ class Discriminate:
         loader_tr = DataLoader(self.train_handler(self.X[idx_lb_train],self.Y[idx_lb_train],self.X[idx_ulb_train],self.Y[idx_ulb_train],
                                             transform = self.args['transform_tr']), shuffle= True, **self.args['loader_tr_args'])
         bce_loss = nn.BCELoss()
-        optim_discriminator = optim.Adam(discriminator.parameters(), lr=5e-4)
+        optim_discriminator = optim.Adam(discriminator.parameters(), lr=5e-4, weight_decay=2e-4)
         self.fea.eval()
         self.clf.eval()
         discriminator.train()
         # Training Discriminator
         for e in range(self.args['epochs_dis']):
+            total_loss = 0.
             for index, label_x, _, unlabel_x, _ in loader_tr:
                 label_x, unlabel_x = label_x.to(self.device), unlabel_x.to(self.device)
                 mu = self.fea(label_x)
@@ -226,8 +227,10 @@ class Discriminate:
                 optim_discriminator.zero_grad()
                 dsc_loss.backward()
                 optim_discriminator.step()
-                sys.stdout.write('\r')
-                sys.stdout.write('Current discriminator model loss: {:.4f}'.format(dsc_loss.item()))
+                total_loss += dsc_loss.item()
+            sys.stdout.write('\r')
+            sys.stdout.write('Current discriminator model loss: {:.8f}'.format(total_loss/len(loader_tr)))
+            sys.stdout.write('\n')
 
         # Querying
         discriminator.eval()

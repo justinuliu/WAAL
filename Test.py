@@ -76,7 +76,7 @@ args_pool = {
             'seed': 1,
             'epochs_dis': 5,
             'repr_portion': .4,
-            'farthest_first_criterion': 'distance'
+            'farthest_first_criterion': 'w_to_o_dist'
         },
 }
 
@@ -241,6 +241,8 @@ for list in query_list:
 # print final results for each round
 # print('SEED {}'.format(SEED))
 print(type(strategy).__name__)
+if QUERY_STRATEGY == 'FFF':
+    print(args['farthest_first_criterion'])
 print(acc)
 print(query_count)
 np.save('data/query_list_'+QUERY_STRATEGY+'.npy', np.array(query_list))

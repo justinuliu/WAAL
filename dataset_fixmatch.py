@@ -105,3 +105,12 @@ class TransformFixFashionMNIST(object):
         weak = self.weak(x)
         strong = self.strong(x)
         return self.normalize(weak), self.normalize(strong)
+
+
+class TransformMultipleTimes:
+    def __init__(self, transform, K=2):
+        self.transform = transform
+        self.K = K
+
+    def __call__(self, inp):
+        return [self.transform(inp) for _ in range(self.K)]

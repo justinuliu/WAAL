@@ -12,7 +12,7 @@ def get_net(name):
     elif name == 'SVHN':
         return VGG_10_fea, VGG_10_clf, VGG_10_dis
     elif name == 'CIFAR10':
-        return  VGG_10_fea, VGG_10_clf, VGG_10_dis
+        return VGG_10_fea, VGG_10_clf, VGG_10_dis
 
 
 # net_1  for Mnist and Fashion_mnist

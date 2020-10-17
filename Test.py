@@ -8,7 +8,7 @@ from torchvision import transforms
 from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUncertainty, FarthestFirst, \
     FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling, \
     LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv, FixMatchKLDiv, Discriminate, DisEntropyMixture, \
-    FixMatchDisEntropyMixture, FixMatchDis, DisEntropyCombined, FixMatchDisEntropyCombined
+    FixMatchDisEntropyMixture, FixMatchDis, DisEntropyCombined, FixMatchDisEntropyCombined, FixMatchFarthestFirst
 from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST
 
 
@@ -16,7 +16,7 @@ NUM_INIT_LB = 100
 NUM_QUERY   = 100
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "FixMatchDisEntropyCombined"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+QUERY_STRATEGY = "FFF"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 args_pool = {
     'FashionMNIST':
@@ -31,6 +31,7 @@ args_pool = {
             'threshold': 0.95,
             'seed': 1,
             'epochs_dis': 10,
+            'repr_portion': .4,
         },
     'SVHN':
         {
@@ -50,6 +51,7 @@ args_pool = {
             'threshold': 0.95,
             'seed': 1,
             'epochs_dis': 10,
+            'repr_portion': .4,
         },
     'CIFAR10':
         {
@@ -61,6 +63,10 @@ args_pool = {
             'transform_te': transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.4914, 0.4822, 0.4465),
                                                                      (0.2470, 0.2435, 0.2616))]),
+            'transform_w': transforms.Compose([transforms.RandomHorizontalFlip(),
+                                               transforms.RandomCrop(size=32, padding=int(32*0.125), padding_mode='reflect'),
+                                               transforms.ToTensor(),
+                                               transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
             'optimizer_args': {'lr': 0.01, 'momentum': 0.3},
@@ -69,6 +75,8 @@ args_pool = {
             'threshold': 0.95,
             'seed': 1,
             'epochs_dis': 5,
+            'repr_portion': .4,
+            'farthest_first_criterion': 'distance'
         },
 }
 
@@ -154,6 +162,8 @@ elif QUERY_STRATEGY == 'WAALUncertainty':
     strategy = WAALUncertainty(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FF':
     strategy = FarthestFirst(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FFF':
+    strategy = FixMatchFarthestFirst(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchEntropy':
     strategy = FixMatchEntropy(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchRandom':

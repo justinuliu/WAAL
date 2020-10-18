@@ -94,7 +94,7 @@ class FixMatchFarthestFirst:
 
         loader_tr = DataLoader(
             self.train_handler(self.X[idx_lb_train], self.Y[idx_lb_train], self.X[idx_ulb_train], self.Y[idx_ulb_train],
-                               transform=self.args['transform_fix']), shuffle=True, **self.args['loader_tr_args'])
+                               transform=self.args['transform_s']), shuffle=True, **self.args['loader_tr_args'])
 
         for epoch in range(n_epoch):
 
@@ -314,7 +314,7 @@ class FixMatchFarthestFirst:
         idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
 
         loader = DataLoader(
-            self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled], transform=self.args['transform_fix']),
+            self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled], transform=self.args['transform_s']),
             shuffle=True, **self.args['loader_tr_args'])
 
         self.fea.eval()

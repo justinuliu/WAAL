@@ -93,7 +93,7 @@ class FixMatchDisEntropyCombined:
 
         loader_tr = DataLoader(
             self.train_handler(self.X[idx_lb_train], self.Y[idx_lb_train], self.X[idx_ulb_train], self.Y[idx_ulb_train],
-                               transform=self.args['transform_s']), shuffle=True, **self.args['loader_tr_args'])
+                               transform=self.args['transform_fixmatch']), shuffle=True, **self.args['loader_tr_args'])
 
         for epoch in range(n_epoch):
 

@@ -9,8 +9,7 @@ from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUnc
     FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling, \
     LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv, FixMatchKLDiv, Discriminate, DisEntropyMixture, \
     FixMatchDisEntropyMixture, FixMatchDis, DisEntropyCombined, FixMatchDisEntropyCombined, FixMatchFarthestFirst
-from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST
-
+from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST, CIFAR10Policy, Cutout
 
 NUM_INIT_LB = 100
 NUM_QUERY   = 100
@@ -27,7 +26,7 @@ args_pool = {
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
             'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
             'num_class': 10,
-            'transform_s': TransformFixFashionMNIST((0.1307,), (0.3081,)),
+            'transform_fixmatch': TransformFixFashionMNIST((0.1307,), (0.3081,)),
             'threshold': 0.95,
             'seed': 1,
             'epochs_dis': 10,
@@ -47,7 +46,7 @@ args_pool = {
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
             'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
             'num_class': 10,
-            'transform_s': TransformFixSVHN((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
+            'transform_fixmatch': TransformFixSVHN((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
             'threshold': 0.95,
             'seed': 1,
             'epochs_dis': 10,
@@ -64,19 +63,29 @@ args_pool = {
                                                 transforms.Normalize((0.4914, 0.4822, 0.4465),
                                                                      (0.2470, 0.2435, 0.2616))]),
             'transform_w': transforms.Compose([transforms.RandomHorizontalFlip(),
-                                               transforms.RandomCrop(size=32, padding=int(32*0.125), padding_mode='reflect'),
+                                               transforms.RandomCrop(size=32, padding=int(32 * 0.125),
+                                                                     padding_mode='reflect'),
                                                transforms.ToTensor(),
-                                               transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]),
+                                               transforms.Normalize((0.4914, 0.4822, 0.4465),
+                                                                    (0.2470, 0.2435, 0.2616))]),
+            'transform_s': transforms.Compose([
+                transforms.RandomCrop(32, padding=4, fill=128),
+                # fill parameter needs torchvision installed from source
+                transforms.RandomHorizontalFlip(),
+                CIFAR10Policy(),
+                transforms.ToTensor(),
+                Cutout(n_holes=1, length=16),  # (https://github.com/uoguelph-mlrg/Cutout/blob/master/util/cutout.py)
+            ]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
             'optimizer_args': {'lr': 0.01, 'momentum': 0.3},
             'num_class': 10,
-            'transform_s': TransformFixCIFAR((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
+            'transform_fixmatch': TransformFixCIFAR((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
             'threshold': 0.95,
             'seed': 1,
             'epochs_dis': 5,
             'repr_portion': .4,
-            'farthest_first_criterion': 'w_to_o_dist'
+            'farthest_first_criterion': 's_i_var'
         },
 }
 

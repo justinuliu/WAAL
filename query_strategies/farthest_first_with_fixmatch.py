@@ -280,7 +280,41 @@ class FixMatchFarthestFirst:
                     out_aug, _ = self.clf(latent_aug)
                     probs_aug = F.softmax(out_aug, dim=1)
                     dist = pdist(probs_aug, probs_orig)
-                    score[idxs_orig] = dist
+                    score[idxs_orig] += dist
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def weak_to_orignal_distance_max(self, query_num):
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+
+        loader_orig = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                   transform=self.args['transform_te']),
+                                 shuffle=False, **self.args['loader_te_args'])
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_w'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        loader = zip(loader_orig, loader_aug)
+
+        self.fea.eval()
+        self.clf.eval()
+
+        pdist = torch.nn.PairwiseDistance(p=2)
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
+                input_orig = input_orig.to(self.device)
+                latent_orig = self.fea(input_orig)
+                out_orig, _ = self.clf(latent_orig)
+                probs_orig = F.softmax(out_orig, dim=1)
+                for input_aug in inputs_aug:
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    dist = pdist(probs_aug, probs_orig)
+                    score[idxs_orig] = torch.max(score[idxs_orig], dist)
 
         score = score.cpu()
         return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
@@ -364,7 +398,41 @@ class FixMatchFarthestFirst:
                     out_aug, _ = self.clf(latent_aug)
                     probs_aug = F.softmax(out_aug, dim=1)
                     dist = pdist(probs_aug, probs_orig)
-                    score[idxs_orig] = dist
+                    score[idxs_orig] += dist
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def strong_to_original_distance_max(self, query_num):
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+
+        loader_orig = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                   transform=self.args['transform_te']),
+                                 shuffle=False, **self.args['loader_te_args'])
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_s'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        loader = zip(loader_orig, loader_aug)
+
+        self.fea.eval()
+        self.clf.eval()
+
+        pdist = torch.nn.PairwiseDistance(p=2)
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
+                input_orig = input_orig.to(self.device)
+                latent_orig = self.fea(input_orig)
+                out_orig, _ = self.clf(latent_orig)
+                probs_orig = F.softmax(out_orig, dim=1)
+                for input_aug in inputs_aug:
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    dist = pdist(probs_aug, probs_orig)
+                    score[idxs_orig] = torch.max(score[idxs_orig], dist)
 
         score = score.cpu()
         return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
@@ -407,10 +475,14 @@ class FixMatchFarthestFirst:
             return self.weak_to_orignal_cross_entropy(query_num)
         elif self.args['farthest_first_criterion'] == 'w_to_o_dist':
             return self.weak_to_orignal_distance(query_num)
+        elif self.args['farthest_first_criterion'] == 'w_to_o_dist_m':
+            return self.weak_to_orignal_distance_max(query_num)
         elif self.args['farthest_first_criterion'] == 'w_i_var':
             return self.weak_internal_variance(query_num)
         elif self.args['farthest_first_criterion'] == 's_to_o_dist':
             return self.strong_to_original_distance(query_num)
+        elif self.args['farthest_first_criterion'] == 's_to_o_dist_m':
+            return self.strong_to_original_distance_max(query_num)
         elif self.args['farthest_first_criterion'] == 's_to_o_ce':
             return self.strong_to_original_cross_entropy(query_num)
         elif self.args['farthest_first_criterion'] == 's_i_var':

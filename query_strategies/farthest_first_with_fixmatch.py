@@ -225,7 +225,7 @@ class FixMatchFarthestFirst:
                                                    transform=self.args['transform_te']),
                                  shuffle=False, **self.args['loader_te_args'])
         loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
-                                                  transform=TransformMultipleTimes(self.args['transform_w'])),
+                                                  transform=TransformMultipleTimes(self.args['transform_w'], self.args['K'])),
                                 shuffle=False, **self.args['loader_te_args'])
 
         loader = zip(loader_orig, loader_aug)
@@ -258,7 +258,7 @@ class FixMatchFarthestFirst:
                                                    transform=self.args['transform_te']),
                                  shuffle=False, **self.args['loader_te_args'])
         loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
-                                                  transform=TransformMultipleTimes(self.args['transform_w'])),
+                                                  transform=TransformMultipleTimes(self.args['transform_w'], self.args['K'])),
                                 shuffle=False, **self.args['loader_te_args'])
 
         loader = zip(loader_orig, loader_aug)
@@ -292,7 +292,7 @@ class FixMatchFarthestFirst:
                                                    transform=self.args['transform_te']),
                                  shuffle=False, **self.args['loader_te_args'])
         loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
-                                                  transform=TransformMultipleTimes(self.args['transform_w'])),
+                                                  transform=TransformMultipleTimes(self.args['transform_w'], self.args['K'])),
                                 shuffle=False, **self.args['loader_te_args'])
 
         loader = zip(loader_orig, loader_aug)
@@ -323,7 +323,7 @@ class FixMatchFarthestFirst:
         idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
 
         loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
-                                                  transform=TransformMultipleTimes(self.args['transform_w'])),
+                                                  transform=TransformMultipleTimes(self.args['transform_w'], self.args['K'])),
                                 shuffle=False, **self.args['loader_te_args'])
 
         self.fea.eval()
@@ -348,7 +348,7 @@ class FixMatchFarthestFirst:
         idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
 
         loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
-                                                  transform=TransformMultipleTimes(self.args['transform_s'])),
+                                                  transform=TransformMultipleTimes(self.args['transform_s'], self.args['K'])),
                                 shuffle=False, **self.args['loader_te_args'])
 
         self.fea.eval()
@@ -376,7 +376,7 @@ class FixMatchFarthestFirst:
                                                    transform=self.args['transform_te']),
                                  shuffle=False, **self.args['loader_te_args'])
         loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
-                                                  transform=TransformMultipleTimes(self.args['transform_s'])),
+                                                  transform=TransformMultipleTimes(self.args['transform_s'], self.args['K'])),
                                 shuffle=False, **self.args['loader_te_args'])
 
         loader = zip(loader_orig, loader_aug)
@@ -410,7 +410,7 @@ class FixMatchFarthestFirst:
                                                    transform=self.args['transform_te']),
                                  shuffle=False, **self.args['loader_te_args'])
         loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
-                                                  transform=TransformMultipleTimes(self.args['transform_s'])),
+                                                  transform=TransformMultipleTimes(self.args['transform_s'], self.args['K'])),
                                 shuffle=False, **self.args['loader_te_args'])
 
         loader = zip(loader_orig, loader_aug)
@@ -444,7 +444,7 @@ class FixMatchFarthestFirst:
                                                    transform=self.args['transform_te']),
                                  shuffle=False, **self.args['loader_te_args'])
         loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
-                                                  transform=TransformMultipleTimes(self.args['transform_s'])),
+                                                  transform=TransformMultipleTimes(self.args['transform_s'], self.args['K'])),
                                 shuffle=False, **self.args['loader_te_args'])
 
         loader = zip(loader_orig, loader_aug)

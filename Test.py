@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+from autoaugment import SVHNPolicy, CIFAR10Policy
 from dataset_WA import get_dataset,get_handler
 import dataset
 from model_WA import get_net
@@ -9,13 +10,13 @@ from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUnc
     FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling, \
     LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv, FixMatchKLDiv, Discriminate, DisEntropyMixture, \
     FixMatchDisEntropyMixture, FixMatchDis, DisEntropyCombined, FixMatchDisEntropyCombined, FixMatchFarthestFirst
-from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST, CIFAR10Policy, Cutout
+from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST, Cutout
 
 NUM_INIT_LB = 100
 NUM_QUERY   = 100
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "FFF"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+QUERY_STRATEGY = "FixMatchRandom"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 args_pool = {
     'FashionMNIST':
@@ -42,6 +43,18 @@ args_pool = {
             'transform_te': transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.4377, 0.4438, 0.4728),
                                                                      (0.1980, 0.2010, 0.1970))]),
+            'transform_w': transforms.Compose([
+                transforms.RandomCrop(size=32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))]),
+            'transform_s': transforms.Compose([
+                transforms.RandomCrop(32, padding=4, fill=128),
+                # fill parameter needs torchvision installed from source
+                SVHNPolicy(),
+                transforms.ToTensor(),
+                Cutout(n_holes=1, length=20),  # (https://github.com/uoguelph-mlrg/Cutout/blob/master/util/cutout.py)
+            ]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
             'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
@@ -51,6 +64,7 @@ args_pool = {
             'seed': 1,
             'epochs_dis': 10,
             'repr_portion': .4,
+            'farthest_first_criterion': 'w_i_var'
         },
     'CIFAR10':
         {
@@ -84,7 +98,8 @@ args_pool = {
             'seed': 1,
             'epochs_dis': 5,
             'repr_portion': .4,
-            'farthest_first_criterion': 'w_i_var'
+            'farthest_first_criterion': 'w_i_var',
+            'K': 2
         },
 }
 
@@ -128,7 +143,6 @@ def stratified_split_dataset(targets, num_labelled_samples, num_classes, seed=No
 
 
 args = args_pool[DATA_NAME]
-
 # load dataset (Only using the first 50K)
 X_tr, Y_tr, X_te, Y_te = get_dataset(DATA_NAME)
 X_tr = X_tr[:50000, :]
@@ -235,7 +249,7 @@ for rd in range(1,NUM_ROUND+1):
     query_list[rd-1] = q_idxs
     # update
     strategy.update(idxs_lb)
-    torch.manual_seed(args['seed'])
+    # torch.manual_seed(args['seed'])
     strategy.train(alpha=alpha, total_epoch=epoch)
 
     # compute accuracy at each round
@@ -250,7 +264,7 @@ for list in query_list:
 # print('SEED {}'.format(SEED))
 print(type(strategy).__name__)
 if QUERY_STRATEGY == 'FFF':
-    print(args['farthest_first_criterion'])
+    print('{}: {}'.format(args['farthest_first_criterion'], args['K']))
 print('seed: {:d}'.format(args['seed']))
 print(acc)
 print(query_count)

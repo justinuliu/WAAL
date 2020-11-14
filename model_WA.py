@@ -1,18 +1,25 @@
+from typing import Any
+
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
 import torch.nn.init as init
+from efficientnet_pytorch import EfficientNet
+
+
+def build_efficientnet_b0():
+    return EfficientNet.from_name('efficientnet-b0')
 
 
 def get_net(name):
-
-
     if name == 'FashionMNIST':
         return Net1_fea, Net1_clf, Net1_dis
     elif name == 'SVHN':
         return VGG_10_fea, VGG_10_clf, VGG_10_dis
     elif name == 'CIFAR10':
         return VGG_10_fea, VGG_10_clf, VGG_10_dis
+    elif name == 'Food101':
+        return build_efficientnet_b0, None, None
 
 
 # net_1  for Mnist and Fashion_mnist
@@ -29,7 +36,7 @@ class Net1_fea(nn.Module):
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
         self.conv2_drop = nn.Dropout2d()
 
-    def forward(self,x):
+    def forward(self, x):
 
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))

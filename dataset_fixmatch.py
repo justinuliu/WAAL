@@ -107,6 +107,31 @@ class TransformFixFashionMNIST(object):
         return self.normalize(weak), self.normalize(strong)
 
 
+class TransformFixFood101(object):
+    def __init__(self, mean, std):
+        self.weak = transforms.Compose([
+            transforms.RandomRotation(30),
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+        ])
+
+        self.strong = transforms.Compose([
+            transforms.RandomRotation(30),
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            ImageNetPolicy(),
+            transforms.ToTensor(),
+        ])
+        self.normalize = transforms.Compose([
+            transforms.Normalize(mean=mean, std=std)])
+
+    def __call__(self, x):
+        weak = self.weak(x)
+        strong = self.strong(x)
+        return self.normalize(weak), self.normalize(strong)
+
+
 class TransformMultipleTimes:
     def __init__(self, transform, K=2):
         self.transform = transform

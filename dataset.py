@@ -3,6 +3,7 @@ import torch
 from torchvision import datasets
 from torch.utils.data import Dataset
 from PIL import Image
+from torchvision.datasets.folder import default_loader
 
 
 def get_dataset(name):
@@ -76,6 +77,8 @@ def get_handler(name):
         return DataHandler3
     elif name == 'CIFAR100':
         return DataHandler3
+    elif name == 'Food101':
+        return DataHandler4
 
 
 class DataHandler1(Dataset):
@@ -122,6 +125,24 @@ class DataHandler3(Dataset):
         x, y = self.X[index], self.Y[index]
         if self.transform is not None:
             x = Image.fromarray(x)
+            x = self.transform(x)
+        return x, y, index
+
+    def __len__(self):
+        return len(self.X)
+
+
+class DataHandler4(Dataset):
+    def __init__(self, X, Y, transform=None):
+        self.X = X
+        self.Y = Y
+        self.transform = transform
+        self.loader = default_loader
+
+    def __getitem__(self, index):
+        x, y = self.X[index], self.Y[index]
+        x = self.loader(x)
+        if self.transform is not None:
             x = self.transform(x)
         return x, y, index
 

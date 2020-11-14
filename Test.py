@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from autoaugment import SVHNPolicy, CIFAR10Policy
+from autoaugment import SVHNPolicy, CIFAR10Policy, ImageNetPolicy
 from dataset_WA import get_dataset,get_handler
 import dataset
 from model_WA import get_net
@@ -10,12 +10,12 @@ from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUnc
     FixMatchEntropy, FixMatchRandom, EntropySelfTraining, FarthestFirstEntropy, DiscriminativeRepresentationSampling, \
     LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv, FixMatchKLDiv, Discriminate, DisEntropyMixture, \
     FixMatchDisEntropyMixture, FixMatchDis, DisEntropyCombined, FixMatchDisEntropyCombined, FixMatchFarthestFirst
-from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST, Cutout
+from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST, Cutout, TransformFixFood101
 
-NUM_INIT_LB = 100
-NUM_QUERY   = 100
+NUM_INIT_LB = 1010
+NUM_QUERY   = 101
 NUM_ROUND   = 5
-DATA_NAME   = 'CIFAR10'
+DATA_NAME   = 'Food101'
 QUERY_STRATEGY = "FixMatchRandom"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 args_pool = {
@@ -101,6 +101,45 @@ args_pool = {
             'farthest_first_criterion': 'w_i_var',
             'K': 2
         },
+    'Food101':
+        {
+            'transform_tr': transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            ]),
+            'transform_te': transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            ]),
+            'transform_w': transforms.Compose([
+                transforms.RandomRotation(30),
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+            ]),
+            'transform_s': transforms.Compose([
+                transforms.RandomRotation(30),
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                ImageNetPolicy(),
+                transforms.ToTensor(),
+            ]),
+            'loader_tr_args': {'batch_size': 16, 'num_workers': 1},
+            'loader_te_args': {'batch_size': 16, 'num_workers': 1},
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.3},
+            'num_class': 101,
+            'transform_fixmatch': TransformFixFood101((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
+            'threshold': 0.95,
+            'seed': 1,
+            'epochs_dis': 5,
+            'repr_portion': .4,
+            'farthest_first_criterion': 'w_i_var',
+            'K': 2
+        },
 }
 
 torch.backends.cudnn.deterministic = True
@@ -145,8 +184,9 @@ def stratified_split_dataset(targets, num_labelled_samples, num_classes, seed=No
 args = args_pool[DATA_NAME]
 # load dataset (Only using the first 50K)
 X_tr, Y_tr, X_te, Y_te = get_dataset(DATA_NAME)
-X_tr = X_tr[:50000, :]
-Y_tr = Y_tr[:50000]
+if DATA_NAME != 'Food101':
+    X_tr = X_tr[:50000, :]
+    Y_tr = Y_tr[:50000]
 
 
 # start experiment

@@ -11,12 +11,14 @@ from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUnc
     LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv, FixMatchKLDiv, Discriminate, DisEntropyMixture, \
     FixMatchDisEntropyMixture, FixMatchDis, DisEntropyCombined, FixMatchDisEntropyCombined, FixMatchFarthestFirst
 from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST, Cutout, TransformFixFood101
+from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
+from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
-NUM_INIT_LB = 1010
-NUM_QUERY   = 101
+NUM_INIT_LB = 2000
+NUM_QUERY   = 2000
 NUM_ROUND   = 5
-DATA_NAME   = 'Food101'
-QUERY_STRATEGY = "FixMatchRandom"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+DATA_NAME   = 'CIFAR10'
+QUERY_STRATEGY = "FixMatchEntropy"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 args_pool = {
     'FashionMNIST':
@@ -258,6 +260,10 @@ elif QUERY_STRATEGY == 'DisEntropyCombined':
     strategy = DisEntropyCombined(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchDisEntropyCombined':
     strategy = FixMatchDisEntropyCombined(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchSupEntropy':
+    strategy = FixMatchSupEntropy(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchSupLeastConfidence':
+    strategy = FixMatchSupLeastConfidence(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 

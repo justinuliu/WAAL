@@ -14,11 +14,11 @@ from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFa
 from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
 from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
-NUM_INIT_LB = 2000
-NUM_QUERY   = 2000
+NUM_INIT_LB = 100
+NUM_QUERY   = 100
 NUM_ROUND   = 5
 DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "FixMatchEntropy"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+QUERY_STRATEGY = "FF"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 args_pool = {
     'FashionMNIST':
@@ -66,7 +66,8 @@ args_pool = {
             'seed': 1,
             'epochs_dis': 10,
             'repr_portion': .4,
-            'farthest_first_criterion': 'w_i_var'
+            'farthest_first_criterion': 'w_i_var',
+            'K': 2
         },
     'CIFAR10':
         {
@@ -309,7 +310,7 @@ for list in query_list:
 # print final results for each round
 # print('SEED {}'.format(SEED))
 print(type(strategy).__name__)
-if QUERY_STRATEGY == 'FFF':
+if QUERY_STRATEGY == 'FFF' or QUERY_STRATEGY == 'FF':
     print('{}: {}'.format(args['farthest_first_criterion'], args['K']))
 print('seed: {:d}'.format(args['seed']))
 print(acc)

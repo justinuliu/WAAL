@@ -7,6 +7,9 @@ import math
 
 
 # setting gradient values
+from dataset_fixmatch import TransformMultipleTimes
+
+
 def set_requires_grad(model, requires_grad=True):
     """
     Used in training adversarial approach
@@ -189,30 +192,277 @@ class FarthestFirst:
 
         return probs
 
-    def query(self, query_num):
+    def cross_entropy(self, predicted, target):
+        return -(target * torch.log(predicted)).sum(dim=1)
 
-        loader_te = DataLoader(self.test_handler(self.X, self.Y, transform=self.args['transform_te']),
-                               shuffle=False, **self.args['loader_te_args'])
-        self.fea.eval()
-
-        features = None
-        with torch.no_grad():
-            for x, y, idxs in loader_te:
-                x, y = x.to(self.device), y.to(self.device)
-                latent = self.fea(x)
-                if features is None:
-                    features = latent.cpu()
-                else:
-                    features = torch.cat((features, latent.cpu()))
-
-        fea_lbs = features[self.idx_lb]
-        fea_ulbs = features[~self.idx_lb]
-        dist = []
-        pdist = torch.nn.PairwiseDistance(p=2)
-        for f in fea_ulbs:
-            d = pdist(f, fea_lbs)
-            d = d.min()
-            dist.append(d.item())
+    def weak_to_orignal_cross_entropy(self, query_num):
         idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
-        dist = torch.tensor(dist)
-        return idxs_unlabeled[dist.sort()[1][-query_num:]]
+
+        loader_orig = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                   transform=self.args['transform_te']),
+                                 shuffle=False, **self.args['loader_te_args'])
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_w'], self.args['K'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        loader = zip(loader_orig, loader_aug)
+
+        self.fea.eval()
+        self.clf.eval()
+
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
+                input_orig = input_orig.to(self.device)
+                latent_orig = self.fea(input_orig)
+                out_orig, _ = self.clf(latent_orig)
+                probs_orig = F.softmax(out_orig, dim=1)
+                for input_aug in inputs_aug:
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    ce = self.cross_entropy(probs_aug, probs_orig)
+                    score[idxs_orig] += ce
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def weak_to_orignal_distance(self, query_num):
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+
+        loader_orig = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                   transform=self.args['transform_te']),
+                                 shuffle=False, **self.args['loader_te_args'])
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_w'], self.args['K'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        loader = zip(loader_orig, loader_aug)
+
+        self.fea.eval()
+        self.clf.eval()
+
+        pdist = torch.nn.PairwiseDistance(p=2)
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
+                input_orig = input_orig.to(self.device)
+                latent_orig = self.fea(input_orig)
+                out_orig, _ = self.clf(latent_orig)
+                probs_orig = F.softmax(out_orig, dim=1)
+                for input_aug in inputs_aug:
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    dist = pdist(probs_aug, probs_orig)
+                    score[idxs_orig] += dist
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def weak_to_orignal_distance_max(self, query_num):
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+
+        loader_orig = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                   transform=self.args['transform_te']),
+                                 shuffle=False, **self.args['loader_te_args'])
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_w'], self.args['K'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        loader = zip(loader_orig, loader_aug)
+
+        self.fea.eval()
+        self.clf.eval()
+
+        pdist = torch.nn.PairwiseDistance(p=2)
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
+                input_orig = input_orig.to(self.device)
+                latent_orig = self.fea(input_orig)
+                out_orig, _ = self.clf(latent_orig)
+                probs_orig = F.softmax(out_orig, dim=1)
+                for input_aug in inputs_aug:
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    dist = pdist(probs_aug, probs_orig)
+                    score[idxs_orig] = torch.max(score[idxs_orig], dist)
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def weak_internal_variance(self, query_num):
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_w'], self.args['K'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        self.fea.eval()
+        self.clf.eval()
+
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for inputs_aug, _, idxs_aug in loader_aug:
+                probs = torch.zeros((len(inputs_aug), len(idxs_aug), self.args['num_class']), device=self.device)
+                for input_aug, i in zip(inputs_aug, range(len(inputs_aug))):
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    probs[i] = probs_aug
+                score[idxs_aug] = torch.var(probs, dim=0).sum(dim=1)
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def strong_internal_variance(self, query_num):
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_s'], self.args['K'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        self.fea.eval()
+        self.clf.eval()
+
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for inputs_aug, _, idxs_aug in loader_aug:
+                probs = torch.zeros((len(inputs_aug), len(idxs_aug), self.args['num_class']), device=self.device)
+                for input_aug, i in zip(inputs_aug, range(len(inputs_aug))):
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    probs[i] = probs_aug
+                score[idxs_aug] = torch.var(probs, dim=0).sum(dim=1)
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def strong_to_original_distance(self, query_num):
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+
+        loader_orig = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                   transform=self.args['transform_te']),
+                                 shuffle=False, **self.args['loader_te_args'])
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_s'], self.args['K'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        loader = zip(loader_orig, loader_aug)
+
+        self.fea.eval()
+        self.clf.eval()
+
+        pdist = torch.nn.PairwiseDistance(p=2)
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
+                input_orig = input_orig.to(self.device)
+                latent_orig = self.fea(input_orig)
+                out_orig, _ = self.clf(latent_orig)
+                probs_orig = F.softmax(out_orig, dim=1)
+                for input_aug in inputs_aug:
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    dist = pdist(probs_aug, probs_orig)
+                    score[idxs_orig] += dist
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def strong_to_original_distance_max(self, query_num):
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+
+        loader_orig = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                   transform=self.args['transform_te']),
+                                 shuffle=False, **self.args['loader_te_args'])
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_s'], self.args['K'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        loader = zip(loader_orig, loader_aug)
+
+        self.fea.eval()
+        self.clf.eval()
+
+        pdist = torch.nn.PairwiseDistance(p=2)
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
+                input_orig = input_orig.to(self.device)
+                latent_orig = self.fea(input_orig)
+                out_orig, _ = self.clf(latent_orig)
+                probs_orig = F.softmax(out_orig, dim=1)
+                for input_aug in inputs_aug:
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    dist = pdist(probs_aug, probs_orig)
+                    score[idxs_orig] = torch.max(score[idxs_orig], dist)
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def strong_to_original_cross_entropy(self, query_num):
+        idxs_unlabeled = np.arange(self.n_pool)[~self.idx_lb]
+
+        loader_orig = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                   transform=self.args['transform_te']),
+                                 shuffle=False, **self.args['loader_te_args'])
+        loader_aug = DataLoader(self.test_handler(self.X[idxs_unlabeled], self.Y[idxs_unlabeled],
+                                                  transform=TransformMultipleTimes(self.args['transform_s'], self.args['K'])),
+                                shuffle=False, **self.args['loader_te_args'])
+
+        loader = zip(loader_orig, loader_aug)
+
+        self.fea.eval()
+        self.clf.eval()
+
+        with torch.no_grad():
+            score = torch.zeros(len(idxs_unlabeled), device=self.device)
+            for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
+                input_orig = input_orig.to(self.device)
+                latent_orig = self.fea(input_orig)
+                out_orig, _ = self.clf(latent_orig)
+                probs_orig = F.softmax(out_orig, dim=1)
+                for input_aug in inputs_aug:
+                    input_aug = input_aug.to(self.device)
+                    latent_aug = self.fea(input_aug)
+                    out_aug, _ = self.clf(latent_aug)
+                    probs_aug = F.softmax(out_aug, dim=1)
+                    ce = self.cross_entropy(probs_aug, probs_orig)
+                    score[idxs_orig] += ce
+
+        score = score.cpu()
+        return idxs_unlabeled[score.sort(descending=True)[1][:query_num]]
+
+    def query(self, query_num):
+        if self.args['farthest_first_criterion'] == 'w_to_o_ce':
+            return self.weak_to_orignal_cross_entropy(query_num)
+        elif self.args['farthest_first_criterion'] == 'w_to_o_dist':
+            return self.weak_to_orignal_distance(query_num)
+        elif self.args['farthest_first_criterion'] == 'w_to_o_dist_m':
+            return self.weak_to_orignal_distance_max(query_num)
+        elif self.args['farthest_first_criterion'] == 'w_i_var':
+            return self.weak_internal_variance(query_num)
+        elif self.args['farthest_first_criterion'] == 's_to_o_dist':
+            return self.strong_to_original_distance(query_num)
+        elif self.args['farthest_first_criterion'] == 's_to_o_dist_m':
+            return self.strong_to_original_distance_max(query_num)
+        elif self.args['farthest_first_criterion'] == 's_to_o_ce':
+            return self.strong_to_original_cross_entropy(query_num)
+        elif self.args['farthest_first_criterion'] == 's_i_var':
+            return self.strong_internal_variance(query_num)
+        else:
+            raise Exception()

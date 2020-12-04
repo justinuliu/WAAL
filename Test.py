@@ -14,9 +14,9 @@ from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFa
 from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
 from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
-NUM_INIT_LB = 101
+NUM_INIT_LB = 10100
 NUM_QUERY   = 101
-NUM_ROUND   = 5
+NUM_ROUND   = 0
 DATA_NAME   = 'Food101'
 QUERY_STRATEGY = "Random"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
@@ -39,23 +39,25 @@ args_pool = {
         {
             'transform_tr': transforms.Compose([
                 # transforms.RandomCrop(size = 32, padding=4),
-                # transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))]),
-            'transform_te': transforms.Compose([transforms.ToTensor(),
-                                                transforms.Normalize((0.4377, 0.4438, 0.4728),
-                                                                     (0.1980, 0.2010, 0.1970))]),
+                transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))
+            ]),
+            'transform_te': transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))
+            ]),
             'transform_w': transforms.Compose([
                 transforms.RandomCrop(size=32, padding=4),
-                transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))]),
+                transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))
+            ]),
             'transform_s': transforms.Compose([
                 transforms.RandomCrop(32, padding=4, fill=128),
                 # fill parameter needs torchvision installed from source
                 SVHNPolicy(),
                 transforms.ToTensor(),
                 Cutout(n_holes=1, length=20),  # (https://github.com/uoguelph-mlrg/Cutout/blob/master/util/cutout.py)
+                transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
             ]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
@@ -75,15 +77,18 @@ args_pool = {
                 # transforms.RandomCrop(size = 32, padding=4),
                 # transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))]),
-            'transform_te': transforms.Compose([transforms.ToTensor(),
-                                                transforms.Normalize((0.4914, 0.4822, 0.4465),
-                                                                     (0.2470, 0.2435, 0.2616))]),
-            'transform_w': transforms.Compose([transforms.RandomCrop(size=32, padding=4),
-                                               transforms.RandomHorizontalFlip(),
-                                               transforms.ToTensor(),
-                                               transforms.Normalize((0.4914, 0.4822, 0.4465),
-                                                                    (0.2470, 0.2435, 0.2616))]),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+            ]),
+            'transform_te': transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+            ]),
+            'transform_w': transforms.Compose([
+                transforms.RandomCrop(size=32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+            ]),
             'transform_s': transforms.Compose([
                 transforms.RandomCrop(32, padding=4, fill=128),
                 # fill parameter needs torchvision installed from source
@@ -91,6 +96,7 @@ args_pool = {
                 CIFAR10Policy(),
                 transforms.ToTensor(),
                 Cutout(n_holes=1, length=16),  # (https://github.com/uoguelph-mlrg/Cutout/blob/master/util/cutout.py)
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
             ]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
@@ -123,6 +129,7 @@ args_pool = {
                 transforms.RandomResizedCrop(224),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
             ]),
             'transform_s': transforms.Compose([
                 transforms.RandomRotation(30),
@@ -130,12 +137,13 @@ args_pool = {
                 transforms.RandomHorizontalFlip(),
                 ImageNetPolicy(),
                 transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
             ]),
             'loader_tr_args': {'batch_size': 16, 'num_workers': 1},
             'loader_te_args': {'batch_size': 16, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.256, 'momentum': 0.9, 'weight_decay': 1e-5},
+            'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-5},
             'num_class': 101,
-            'transform_fixmatch': TransformFixFood101((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
+            'transform_fixmatch': TransformFixFood101((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             'threshold': 0.95,
             'seed': 1,
             'epochs_dis': 5,
@@ -201,7 +209,7 @@ print('number of testing pool: {}'.format(n_test))
 
 # setting training parameters
 alpha = 1e-2
-epoch = 80
+epoch = 100
 
 # Generate the initial labeled pool
 idxs_lb = stratified_split_dataset(Y_tr, NUM_INIT_LB, args['num_class'], seed=args['seed'])

@@ -14,11 +14,11 @@ from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFa
 from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
 from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
-NUM_INIT_LB = 100
-NUM_QUERY   = 100
+NUM_INIT_LB = 101
+NUM_QUERY   = 101
 NUM_ROUND   = 5
-DATA_NAME   = 'CIFAR10'
-QUERY_STRATEGY = "FF"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+DATA_NAME   = 'Food101'
+QUERY_STRATEGY = "Random"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
 args_pool = {
     'FashionMNIST':
@@ -133,7 +133,7 @@ args_pool = {
             ]),
             'loader_tr_args': {'batch_size': 16, 'num_workers': 1},
             'loader_te_args': {'batch_size': 16, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.01, 'momentum': 0.3},
+            'optimizer_args': {'lr': 0.256, 'momentum': 0.9, 'weight_decay': 1e-5},
             'num_class': 101,
             'transform_fixmatch': TransformFixFood101((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
             'threshold': 0.95,

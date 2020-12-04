@@ -78,7 +78,7 @@ class Random:
         n_epoch = total_epoch
 
         self.fea = self.net_fea().to(self.device)
-        self.clf = self.net_clf().to(self.device)
+        self.clf = self.net_clf().to(self.device) if self.net_clf is not None else None
 
         # setting idx_lb and idx_ulb
         idx_lb_train = np.arange(self.n_pool)[self.idx_lb]
@@ -98,13 +98,14 @@ class Random:
                                 momentum=self.args['optimizer_args']['momentum'])
             opt_clf = optim.SGD(self.clf.parameters(),
                                 lr=learning_rate(self.args['optimizer_args']['lr'], epoch, total_epoch),
-                                momentum=self.args['optimizer_args']['momentum'])
+                                momentum=self.args['optimizer_args']['momentum']) if self.net_clf is not None else None
 
             # setting the training mode in the beginning of EACH epoch
             # (since we need to compute the training accuracy during the epoch, optional)
 
             self.fea.train()
-            self.clf.train()
+            if self.net_clf is not None:
+                self.clf.train()
 
             Total_loss = 0
             n_batch = 0
@@ -118,20 +119,23 @@ class Random:
                 # training feature extractor and predictor
 
                 set_requires_grad(self.fea, requires_grad=True)
-                set_requires_grad(self.clf, requires_grad=True)
+                if self.net_clf is not None:
+                    set_requires_grad(self.clf, requires_grad=True)
 
                 lb_z = self.fea(label_x)
 
                 opt_fea.zero_grad()
-                opt_clf.zero_grad()
+                if self.net_clf is not None:
+                    opt_clf.zero_grad()
 
-                lb_out, _ = self.clf(lb_z)
+                lb_out, _ = self.clf(lb_z) if self.net_clf is not None else (lb_z, None)
 
                 # prediction loss (deafult we use F.cross_entropy)
                 loss = torch.mean(F.cross_entropy(lb_out, label_y))
                 loss.backward()
                 opt_fea.step()
-                opt_clf.step()
+                if self.net_clf is not None:
+                    opt_clf.step()
 
                 # prediction and computing training accuracy and empirical loss under evaluation mode
                 P = lb_out.max(1)[1]
@@ -151,14 +155,15 @@ class Random:
                                shuffle=False, **self.args['loader_te_args'])
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         P = torch.zeros(len(Y), dtype=Y.dtype)
         with torch.no_grad():
             for x, y, idxs in loader_te:
                 x, y = x.to(self.device), y.to(self.device)
                 latent = self.fea(x)
-                out, _ = self.clf(latent)
+                out, _ = self.clf(latent) if self.net_clf is not None else (latent, None)
                 pred = out.max(1)[1]
                 P[idxs] = pred.cpu()
 

@@ -15,8 +15,8 @@ from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
 from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
 NUM_INIT_LB = 10100
-NUM_QUERY   = 101
-NUM_ROUND   = 0
+NUM_QUERY   = 500
+NUM_ROUND   = 5
 DATA_NAME   = 'Food101'
 QUERY_STRATEGY = "Random"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 
@@ -141,7 +141,7 @@ args_pool = {
             ]),
             'loader_tr_args': {'batch_size': 16, 'num_workers': 1},
             'loader_te_args': {'batch_size': 16, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-5},
+            'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-4},
             'num_class': 101,
             'transform_fixmatch': TransformFixFood101((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             'threshold': 0.95,
@@ -209,7 +209,7 @@ print('number of testing pool: {}'.format(n_test))
 
 # setting training parameters
 alpha = 1e-2
-epoch = 100
+epoch = 300
 
 # Generate the initial labeled pool
 idxs_lb = stratified_split_dataset(Y_tr, NUM_INIT_LB, args['num_class'], seed=args['seed'])

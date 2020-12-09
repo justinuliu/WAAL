@@ -1,13 +1,10 @@
 import numpy as np
 import torch
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import DataLoader
 import math
 
 
 # setting gradient values
-from query_strategies.FixMatch import FixMatch
+from query_strategies.fixmatch import FixMatch
 
 
 def set_requires_grad(model, requires_grad=True):

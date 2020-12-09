@@ -14,11 +14,15 @@ from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFa
 from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
 from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
-NUM_INIT_LB = 10100
-NUM_QUERY   = 500
+NUM_INIT_LB = 20
+NUM_QUERY   = 20
 NUM_ROUND   = 5
-DATA_NAME   = 'Food101'
+DATA_NAME   = 'SVHN'
 QUERY_STRATEGY = "Random"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+# setting training parameters
+MODEL_NAME = "WRN-28-2"
+alpha = 1e-2
+epoch = 4000
 
 args_pool = {
     'FashionMNIST':
@@ -59,13 +63,13 @@ args_pool = {
                 Cutout(n_holes=1, length=20),  # (https://github.com/uoguelph-mlrg/Cutout/blob/master/util/cutout.py)
                 transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
             ]),
-            'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
+            'loader_tr_args': {'batch_size': 10, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 5e-4},
             'num_class': 10,
             'transform_fixmatch': TransformFixSVHN((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
             'threshold': 0.95,
-            'seed': 1,
+            'seed': 5,
             'epochs_dis': 10,
             'repr_portion': .4,
             'farthest_first_criterion': 'w_i_var',
@@ -100,7 +104,7 @@ args_pool = {
             ]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.01, 'momentum': 0.3},
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
             'num_class': 10,
             'transform_fixmatch': TransformFixCIFAR((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
             'threshold': 0.95,
@@ -199,6 +203,8 @@ if DATA_NAME != 'Food101':
     X_tr = X_tr[:50000, :]
     Y_tr = Y_tr[:50000]
 
+# loading neural network
+net_fea, net_clf, net_dis = get_net(MODEL_NAME)
 
 # start experiment
 n_pool = len(Y_tr)
@@ -206,16 +212,10 @@ n_test = len(Y_te)
 print('number of labeled pool: {}'.format(NUM_INIT_LB))
 print('number of unlabeled pool: {}'.format(n_pool - NUM_INIT_LB))
 print('number of testing pool: {}'.format(n_test))
-
-# setting training parameters
-alpha = 1e-2
-epoch = 300
+print('Model class: {}'.format(net_fea))
 
 # Generate the initial labeled pool
 idxs_lb = stratified_split_dataset(Y_tr, NUM_INIT_LB, args['num_class'], seed=args['seed'])
-
-# loading neural network
-net_fea, net_clf, net_dis = get_net(DATA_NAME)
 
 # here the training handlers and testing handlers are different
 train_handler = get_handler(DATA_NAME)

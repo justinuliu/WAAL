@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch
 import torch.nn.init as init
 from efficientnet_pytorch import EfficientNet
+from wideresnet import WideResNet
 
 
 def build_efficientnet_b0():
@@ -12,14 +13,14 @@ def build_efficientnet_b0():
 
 
 def get_net(name):
-    if name == 'FashionMNIST':
+    if name == 'Net1':
         return Net1_fea, Net1_clf, Net1_dis
-    elif name == 'SVHN':
+    elif name == 'VGG16':
         return VGG_10_fea, VGG_10_clf, VGG_10_dis
-    elif name == 'CIFAR10':
-        return VGG_10_fea, VGG_10_clf, VGG_10_dis
-    elif name == 'Food101':
+    elif name == 'EN0':
         return build_efficientnet_b0, None, None
+    elif name == 'WRN-28-2':
+        return lambda: WideResNet(28, 2, 0.3, 10), None, None
 
 
 # net_1  for Mnist and Fashion_mnist

@@ -95,10 +95,12 @@ class Supervised:
             print("lr=%f" % learning_rate(self.args['optimizer_args']['lr'], epoch, total_epoch))
             opt_fea = optim.SGD(self.fea.parameters(),
                                 lr=learning_rate(self.args['optimizer_args']['lr'], epoch, total_epoch),
-                                momentum=self.args['optimizer_args']['momentum'])
+                                momentum=self.args['optimizer_args']['momentum'],
+                                weight_decay=self.args['optimizer_args']['weight_decay'])
             opt_clf = optim.SGD(self.clf.parameters(),
                                 lr=learning_rate(self.args['optimizer_args']['lr'], epoch, total_epoch),
-                                momentum=self.args['optimizer_args']['momentum']) if self.net_clf is not None else None
+                                momentum=self.args['optimizer_args']['momentum'],
+                                weight_decay=self.args['optimizer_args']['weight_decay']) if self.net_clf is not None else None
 
             # setting the training mode in the beginning of EACH epoch
             # (since we need to compute the training accuracy during the epoch, optional)

@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from autoaugment import SVHNPolicy, CIFAR10Policy, ImageNetPolicy
-from dataset_WA import get_dataset,get_handler
+from dataset_WA import get_dataset, get_handler
 import dataset
 from model_WA import get_net
 from torchvision import transforms
@@ -14,15 +14,15 @@ from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFa
 from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
 from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
-NUM_INIT_LB = 20
-NUM_QUERY   = 20
-NUM_ROUND   = 5
-DATA_NAME   = 'SVHN'
-QUERY_STRATEGY = "Random"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+NUM_INIT_LB = 100
+NUM_QUERY = 100
+NUM_ROUND = 5
+DATA_NAME = 'CIFAR10'
+QUERY_STRATEGY = "FixMatchRandom"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 # setting training parameters
-MODEL_NAME = "WRN-28-2"
+MODEL_NAME = "VGG16"
 alpha = 1e-2
-epoch = 4000
+epoch = 80
 
 args_pool = {
     'FashionMNIST':
@@ -31,7 +31,7 @@ args_pool = {
             'transform_te': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 5e-4},
             'num_class': 10,
             'transform_fixmatch': TransformFixFashionMNIST((0.1307,), (0.3081,)),
             'threshold': 0.95,
@@ -65,7 +65,8 @@ args_pool = {
             ]),
             'loader_tr_args': {'batch_size': 10, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 5e-4},
+            # 'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-3},  # for WRN-28-2
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 0},  # for VGG16
             'num_class': 10,
             'transform_fixmatch': TransformFixSVHN((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
             'threshold': 0.95,
@@ -74,12 +75,16 @@ args_pool = {
             'repr_portion': .4,
             'farthest_first_criterion': 'w_i_var',
             'K': 2
+            # epochs for VGG16 for fixmatch 80
+            # epochs for VGG16 for supervised 4000
+            # epochs for WRN-28-2 for fixmatch ?
+            # epochs for WRN-28-2 for supervised 500
         },
     'CIFAR10':
         {
             'transform_tr': transforms.Compose([
-                # transforms.RandomCrop(size = 32, padding=4),
-                # transforms.RandomHorizontalFlip(),
+                transforms.RandomCrop(size = 32, padding=4),
+                transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
             ]),
@@ -104,7 +109,8 @@ args_pool = {
             ]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.01, 'momentum': 0.5},
+            # 'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-3},  # for WRN-28-2
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.3, 'weight_decay': 0},  # for VGG16
             'num_class': 10,
             'transform_fixmatch': TransformFixCIFAR((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
             'threshold': 0.95,
@@ -113,6 +119,10 @@ args_pool = {
             'repr_portion': .4,
             'farthest_first_criterion': 'w_i_var',
             'K': 2
+            # epochs for VGG16 for fixmatch 80
+            # epochs for VGG16 for supervised 300
+            # epochs for WRN-28-2 for fixmatch ?
+            # epochs for WRN-28-2 for supervised 500
         },
     'Food101':
         {
@@ -143,9 +153,9 @@ args_pool = {
                 transforms.ToTensor(),
                 transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
             ]),
-            'loader_tr_args': {'batch_size': 16, 'num_workers': 1},
-            'loader_te_args': {'batch_size': 16, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-4},
+            'loader_tr_args': {'batch_size': 128, 'num_workers': 16},
+            'loader_te_args': {'batch_size': 256, 'num_workers': 16},
+            'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-4},  # for EfficientNet-b0
             'num_class': 101,
             'transform_fixmatch': TransformFixFood101((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             'threshold': 0.95,
@@ -153,12 +163,15 @@ args_pool = {
             'epochs_dis': 5,
             'repr_portion': .4,
             'farthest_first_criterion': 'w_i_var',
-            'K': 2
+            'K': 2,
+            # epochs for fixmatch 110
+            # epochs for supervised 300
         },
 }
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
+
 
 def stratified_split_dataset(targets, num_labelled_samples, num_classes, seed=None, random=False):
     labelled_indices = []
@@ -219,18 +232,18 @@ idxs_lb = stratified_split_dataset(Y_tr, NUM_INIT_LB, args['num_class'], seed=ar
 
 # here the training handlers and testing handlers are different
 train_handler = get_handler(DATA_NAME)
-test_handler  = dataset.get_handler(DATA_NAME)
+test_handler = dataset.get_handler(DATA_NAME)
 
 if QUERY_STRATEGY == 'WAAL':
-    strategy = WAAL(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
+    strategy = WAAL(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'Entropy':
-    strategy = Entropy(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
+    strategy = Entropy(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'Random':
-    strategy = Random(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
+    strategy = Random(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'SWAAL':
     strategy = SWAAL(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'WAALFix':
-    strategy = WAALFixMatch(X_tr,Y_tr,idxs_lb,net_fea,net_clf,net_dis,train_handler,test_handler,args)
+    strategy = WAALFixMatch(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'WAALUncertainty':
     strategy = WAALUncertainty(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FF':
@@ -246,11 +259,13 @@ elif QUERY_STRATEGY == 'SelfTrainingEntropy':
 elif QUERY_STRATEGY == 'FFEntropy':
     strategy = FarthestFirstEntropy(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'DAL':
-    strategy = DiscriminativeRepresentationSampling(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+    strategy = DiscriminativeRepresentationSampling(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler,
+                                                    test_handler, args)
 elif QUERY_STRATEGY == 'LeastConfidence':
     strategy = LeastConfidence(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchLeastConfidence':
-    strategy = FixMatchLeastConfidence(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+    strategy = FixMatchLeastConfidence(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler,
+                                       args)
 elif QUERY_STRATEGY == 'Umap':
     strategy = UmapPlot(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'KLDiv':
@@ -264,52 +279,54 @@ elif QUERY_STRATEGY == 'FixMatchDis':
 elif QUERY_STRATEGY == 'DisEntropyMixture':
     strategy = DisEntropyMixture(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchDisEntropyMixture':
-    strategy = FixMatchDisEntropyMixture(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+    strategy = FixMatchDisEntropyMixture(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler,
+                                         args)
 elif QUERY_STRATEGY == 'DisEntropyCombined':
     strategy = DisEntropyCombined(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchDisEntropyCombined':
-    strategy = FixMatchDisEntropyCombined(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+    strategy = FixMatchDisEntropyCombined(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler,
+                                          args)
 elif QUERY_STRATEGY == 'FixMatchSupEntropy':
     strategy = FixMatchSupEntropy(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchSupLeastConfidence':
-    strategy = FixMatchSupLeastConfidence(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+    strategy = FixMatchSupLeastConfidence(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler,
+                                          args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 
 # print information
 print(DATA_NAME)
-#print('SEED {}'.format(SEED))
+# print('SEED {}'.format(SEED))
 print(type(strategy).__name__)
 
 # round 0 accuracy
 torch.manual_seed(args['seed'])
 strategy.train(alpha=alpha, total_epoch=epoch)
-P = strategy.predict(X_te,Y_te)
-acc = np.zeros(NUM_ROUND+1)
-acc[0] = 1.0 * (Y_te==P).sum().item() / len(Y_te)
+P = strategy.predict(X_te, Y_te)
+acc = np.zeros(NUM_ROUND + 1)
+acc[0] = 1.0 * (Y_te == P).sum().item() / len(Y_te)
 print('Round 0\ntesting accuracy {:.3f}'.format(acc[0]))
 
 query_count = np.zeros(args['num_class'])
 query_list = np.zeros((NUM_ROUND, NUM_QUERY), dtype=np.int)
 
-for rd in range(1,NUM_ROUND+1):
-
+for rd in range(1, NUM_ROUND + 1):
     print('================Round {:d}==============='.format(rd))
 
-    #epoch += 5
+    # epoch += 5
     q_idxs = strategy.query(NUM_QUERY)
     idxs_lb[q_idxs] = True
     count = np.count_nonzero(idxs_lb)
     assert count == NUM_INIT_LB + NUM_QUERY * rd
-    query_list[rd-1] = q_idxs
+    query_list[rd - 1] = q_idxs
     # update
     strategy.update(idxs_lb)
     # torch.manual_seed(args['seed'])
     strategy.train(alpha=alpha, total_epoch=epoch)
 
     # compute accuracy at each round
-    P = strategy.predict(X_te,Y_te)
-    acc[rd] = 1.0 * (Y_te == P).sum().item()/len(Y_te)
+    P = strategy.predict(X_te, Y_te)
+    acc[rd] = 1.0 * (Y_te == P).sum().item() / len(Y_te)
     print('Accuracy {:.3f}'.format(acc[rd]))
 
 for list in query_list:
@@ -323,5 +340,4 @@ if QUERY_STRATEGY == 'FFF' or QUERY_STRATEGY == 'FF':
 print('seed: {:d}'.format(args['seed']))
 print(acc)
 print(query_count)
-np.save('data/query_list_'+QUERY_STRATEGY+'.npy', np.array(query_list))
-
+np.save('data/query_list_' + QUERY_STRATEGY + '.npy', np.array(query_list))

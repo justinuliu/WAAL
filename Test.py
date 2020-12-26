@@ -20,7 +20,7 @@ NUM_ROUND = 5
 DATA_NAME = 'CIFAR10'
 QUERY_STRATEGY = "FixMatchRandom"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 # setting training parameters
-MODEL_NAME = "VGG16"
+MODEL_NAME = "WRN-28-2"
 alpha = 1e-2
 epoch = 80
 
@@ -42,7 +42,7 @@ args_pool = {
     'SVHN':
         {
             'transform_tr': transforms.Compose([
-                # transforms.RandomCrop(size = 32, padding=4),
+                transforms.RandomCrop(size = 32, padding=4),
                 transforms.ToTensor(),
                 transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))
             ]),
@@ -70,10 +70,10 @@ args_pool = {
             'num_class': 10,
             'transform_fixmatch': TransformFixSVHN((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
             'threshold': 0.95,
-            'seed': 5,
+            'seed': 6,
             'epochs_dis': 10,
             'repr_portion': .4,
-            'farthest_first_criterion': 'w_i_var',
+            'farthest_first_criterion': 'w_to_o_dist',
             'K': 2
             # epochs for VGG16 for fixmatch 80
             # epochs for VGG16 for supervised 4000
@@ -109,19 +109,19 @@ args_pool = {
             ]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
-            # 'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-3},  # for WRN-28-2
-            'optimizer_args': {'lr': 0.01, 'momentum': 0.3, 'weight_decay': 0},  # for VGG16
+            'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-3},  # for WRN-28-2
+            # 'optimizer_args': {'lr': 0.01, 'momentum': 0.3, 'weight_decay': 0},  # for VGG16
             'num_class': 10,
             'transform_fixmatch': TransformFixCIFAR((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
             'threshold': 0.95,
             'seed': 1,
             'epochs_dis': 5,
             'repr_portion': .4,
-            'farthest_first_criterion': 'w_i_var',
+            'farthest_first_criterion': 's_to_o_var',
             'K': 2
             # epochs for VGG16 for fixmatch 80
             # epochs for VGG16 for supervised 300
-            # epochs for WRN-28-2 for fixmatch ?
+            # epochs for WRN-28-2 for fixmatch 50
             # epochs for WRN-28-2 for supervised 500
         },
     'Food101':

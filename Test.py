@@ -18,11 +18,11 @@ NUM_INIT_LB = 100
 NUM_QUERY = 100
 NUM_ROUND = 5
 DATA_NAME = 'CIFAR10'
-QUERY_STRATEGY = "FixMatchRandom"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+QUERY_STRATEGY = "FixMatchEntropy"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 # setting training parameters
 MODEL_NAME = "WRN-28-2"
 alpha = 1e-2
-epoch = 80
+epoch = 50
 
 args_pool = {
     'FashionMNIST':
@@ -114,7 +114,7 @@ args_pool = {
             'num_class': 10,
             'transform_fixmatch': TransformFixCIFAR((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
             'threshold': 0.95,
-            'seed': 1,
+            'seed': 7,
             'epochs_dis': 5,
             'repr_portion': .4,
             'farthest_first_criterion': 's_to_o_var',
@@ -317,6 +317,7 @@ for rd in range(1, NUM_ROUND + 1):
     q_idxs = strategy.query(NUM_QUERY)
     idxs_lb[q_idxs] = True
     count = np.count_nonzero(idxs_lb)
+    print("count: {}, NUM_INIT_LB: {}, NUM_QUERY: {}, rd: {}".format(count, NUM_INIT_LB, NUM_QUERY, rd))
     assert count == NUM_INIT_LB + NUM_QUERY * rd
     query_list[rd - 1] = q_idxs
     # update

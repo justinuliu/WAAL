@@ -214,8 +214,8 @@ class Discriminate:
                 mu = self.fea(label_x)
                 unlab_mu = self.fea(unlabel_x)
 
-                labeled_preds = discriminator(mu)
-                unlabeled_preds = discriminator(unlab_mu)
+                labeled_preds = torch.squeeze(discriminator(mu))
+                unlabeled_preds = torch.squeeze(discriminator(unlab_mu))
 
                 lab_real_preds = torch.ones(label_x.size(0))
                 unlab_fake_preds = torch.zeros(unlabel_x.size(0))

@@ -8,8 +8,8 @@ from efficientnet_pytorch import EfficientNet
 from wideresnet import WideResNet
 
 
-def build_efficientnet_b0():
-    return EfficientNet.from_name('efficientnet-b0')
+def build_efficientnet_b0(num_classes):
+    return EfficientNet.from_name('efficientnet-b0', num_classes=num_classes)
 
 
 def get_net(name):
@@ -18,7 +18,7 @@ def get_net(name):
     elif name == 'VGG16':
         return VGG_10_fea, VGG_10_clf, VGG_10_dis
     elif name == 'EN0':
-        return build_efficientnet_b0, None, None
+        return lambda: build_efficientnet_b0(101), None, None
     elif name == 'WRN-28-2':
         return lambda: WideResNet(28, 2, 0.3, 10), None, None
 

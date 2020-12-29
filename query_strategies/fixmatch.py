@@ -191,3 +191,30 @@ class FixMatch:
                 P[idxs] = pred.cpu()
 
         return P
+
+    def predict_prob(self, X, Y):
+
+        """
+        prediction output score probability
+        :param X:
+        :param Y: NEVER USE the Y information for direct prediction
+        :return:
+        """
+
+        loader_te = DataLoader(self.test_handler(X, Y, transform=self.args['transform_te']),
+                               shuffle=False, **self.args['loader_te_args'])
+
+        self.fea.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
+
+        probs = torch.zeros([len(Y), self.num_class])
+        with torch.no_grad():
+            for x, y, idxs in loader_te:
+                x, y = x.to(self.device), y.to(self.device)
+                latent = self.fea(x)
+                out, _ = self.clf(latent) if self.net_clf is not None else (latent, None)
+                prob = F.softmax(out, dim=1)
+                probs[idxs] = prob.cpu()
+
+        return probs

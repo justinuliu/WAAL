@@ -184,14 +184,15 @@ class Supervised:
                                shuffle=False, **self.args['loader_te_args'])
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         probs = torch.zeros([len(Y), self.num_class])
         with torch.no_grad():
             for x, y, idxs in loader_te:
                 x, y = x.to(self.device), y.to(self.device)
                 latent = self.fea(x)
-                out, _ = self.clf(latent)
+                out, _ = self.clf(latent) if self.net_clf is not None else (latent, None)
                 prob = F.softmax(out, dim=1)
                 probs[idxs] = prob.cpu()
 

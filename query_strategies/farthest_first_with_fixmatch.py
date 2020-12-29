@@ -30,19 +30,20 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         with torch.no_grad():
             score = torch.zeros(len(idxs_unlabeled), device=self.device)
             for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 for input_aug in inputs_aug:
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     ce = self.cross_entropy(probs_aug, probs_orig)
                     score[idxs_orig] += ce
@@ -63,7 +64,8 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         pdist = torch.nn.PairwiseDistance(p=2)
         with torch.no_grad():
@@ -71,12 +73,12 @@ class FixMatchFarthestFirst(FixMatch):
             for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 for input_aug in inputs_aug:
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     dist = pdist(probs_aug, probs_orig)
                     score[idxs_orig] += dist
@@ -97,7 +99,8 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         pdist = torch.nn.PairwiseDistance(p=2)
         with torch.no_grad():
@@ -105,12 +108,12 @@ class FixMatchFarthestFirst(FixMatch):
             for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 for input_aug in inputs_aug:
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     dist = pdist(probs_aug, probs_orig)
                     score[idxs_orig] = torch.max(score[idxs_orig], dist)
@@ -126,7 +129,8 @@ class FixMatchFarthestFirst(FixMatch):
                                 shuffle=False, **self.args['loader_te_args'])
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         with torch.no_grad():
             score = torch.zeros(len(idxs_unlabeled), device=self.device)
@@ -135,7 +139,7 @@ class FixMatchFarthestFirst(FixMatch):
                 for input_aug, i in zip(inputs_aug, range(len(inputs_aug))):
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     probs[i] = probs_aug
                 score[idxs_aug] = torch.var(probs, dim=0).sum(dim=1)
@@ -151,7 +155,8 @@ class FixMatchFarthestFirst(FixMatch):
                                 shuffle=False, **self.args['loader_te_args'])
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         with torch.no_grad():
             score = torch.zeros(len(idxs_unlabeled), device=self.device)
@@ -160,7 +165,7 @@ class FixMatchFarthestFirst(FixMatch):
                 for input_aug, i in zip(inputs_aug, range(len(inputs_aug))):
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     probs[i] = probs_aug
                 score[idxs_aug] = torch.var(probs, dim=0).sum(dim=1)
@@ -181,7 +186,8 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         pdist = torch.nn.PairwiseDistance(p=2)
         with torch.no_grad():
@@ -189,12 +195,12 @@ class FixMatchFarthestFirst(FixMatch):
             for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 for input_aug in inputs_aug:
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     dist = pdist(probs_aug, probs_orig)
                     score[idxs_orig] += dist
@@ -215,7 +221,8 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         pdist = torch.nn.PairwiseDistance(p=2)
         with torch.no_grad():
@@ -228,7 +235,7 @@ class FixMatchFarthestFirst(FixMatch):
                 for input_aug in inputs_aug:
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     dist = pdist(probs_aug, probs_orig)
                     score[idxs_orig] = torch.max(score[idxs_orig], dist)
@@ -249,19 +256,20 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         with torch.no_grad():
             score = torch.zeros(len(idxs_unlabeled), device=self.device)
             for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 for input_aug in inputs_aug:
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     ce = self.cross_entropy(probs_aug, probs_orig)
                     score[idxs_orig] += ce
@@ -282,19 +290,20 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         with torch.no_grad():
             score = torch.zeros(len(idxs_unlabeled), device=self.device)
             for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 for input_aug in inputs_aug:
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     ce = self.cross_entropy(probs_aug, probs_orig)
                     score[idxs_orig] += ce
@@ -315,7 +324,8 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         pdist = torch.nn.PairwiseDistance(p=2)
         with torch.no_grad():
@@ -323,12 +333,12 @@ class FixMatchFarthestFirst(FixMatch):
             for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 for input_aug in inputs_aug:
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     dist = pdist(probs_aug, probs_orig)
                     score[idxs_orig] += dist
@@ -349,7 +359,8 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         pdist = torch.nn.PairwiseDistance(p=2)
         with torch.no_grad():
@@ -357,12 +368,12 @@ class FixMatchFarthestFirst(FixMatch):
             for (input_orig, _, idxs_orig), (inputs_aug, _, idxs_aug) in loader:
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 for input_aug in inputs_aug:
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     dist = pdist(probs_aug, probs_orig)
                     score[idxs_orig] = torch.max(score[idxs_orig], dist)
@@ -383,7 +394,8 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         with torch.no_grad():
             score = torch.zeros(len(idxs_unlabeled), device=self.device)
@@ -391,13 +403,13 @@ class FixMatchFarthestFirst(FixMatch):
                 probs = torch.zeros((self.args['K'] + 1, len(idxs_aug), self.args['num_class']), device=self.device)
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 probs[0] = probs_orig
                 for input_aug, i in zip(inputs_aug, range(len(inputs_aug))):
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     probs[i+1] = probs_aug
                 score[idxs_aug] = torch.var(probs, dim=0).sum(dim=1)
@@ -418,7 +430,8 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         with torch.no_grad():
             score = torch.zeros(len(idxs_unlabeled), device=self.device)
@@ -426,13 +439,13 @@ class FixMatchFarthestFirst(FixMatch):
                 probs = torch.zeros((self.args['K'] + 1, len(idxs_aug), self.args['num_class']), device=self.device)
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 probs[0] = probs_orig
                 for input_aug, i in zip(inputs_aug, range(len(inputs_aug))):
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     probs[i+1] = probs_aug
                 score[idxs_aug] = torch.var(probs, dim=0).sum(dim=1)
@@ -453,7 +466,8 @@ class FixMatchFarthestFirst(FixMatch):
         loader = zip(loader_orig, loader_aug)
 
         self.fea.eval()
-        self.clf.eval()
+        if self.net_clf is not None:
+            self.clf.eval()
 
         with torch.no_grad():
             score = torch.zeros(len(idxs_unlabeled), device=self.device)
@@ -461,13 +475,13 @@ class FixMatchFarthestFirst(FixMatch):
                 probs = torch.zeros((self.args['K'] + 1, len(idxs_aug), self.args['num_class']), device=self.device)
                 input_orig = input_orig.to(self.device)
                 latent_orig = self.fea(input_orig)
-                out_orig, _ = self.clf(latent_orig)
+                out_orig, _ = self.clf(latent_orig) if self.net_clf is not None else (latent_orig, None)
                 probs_orig = F.softmax(out_orig, dim=1)
                 probs[0] = probs_orig
                 for input_aug, i in zip(inputs_aug, range(len(inputs_aug))):
                     input_aug = input_aug.to(self.device)
                     latent_aug = self.fea(input_aug)
-                    out_aug, _ = self.clf(latent_aug)
+                    out_aug, _ = self.clf(latent_aug) if self.net_clf is not None else (latent_aug, None)
                     probs_aug = F.softmax(out_aug, dim=1)
                     probs[i+1] = probs_aug
                 score[idxs_aug] = torch.var(probs, dim=0).sum(dim=1)

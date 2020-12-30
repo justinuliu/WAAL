@@ -31,9 +31,9 @@ class WideBasic(nn.Module):
         return out
 
 
-class WideResNet(nn.Module):
-    def __init__(self, depth, widen_factor, dropout_rate, num_classes):
-        super(WideResNet, self).__init__()
+class WideResNetFea(nn.Module):
+    def __init__(self, depth, widen_factor, dropout_rate):
+        super(WideResNetFea, self).__init__()
         self.in_planes = 16
 
         assert ((depth - 4) % 6 == 0), 'Wide-resnet depth should be 6n+4'
@@ -48,7 +48,8 @@ class WideResNet(nn.Module):
         self.layer2 = self._wide_layer(WideBasic, n_stages[2], n, dropout_rate, stride=2)
         self.layer3 = self._wide_layer(WideBasic, n_stages[3], n, dropout_rate, stride=2)
         self.bn1 = nn.BatchNorm2d(n_stages[3], momentum=0.9)
-        self.linear = nn.Linear(n_stages[3], num_classes)
+
+        self.fea_out = n_stages[3]
 
     def _wide_layer(self, block, planes, num_blocks, dropout_rate, stride):
         strides = [stride] + [1] * (int(num_blocks) - 1)
@@ -68,13 +69,30 @@ class WideResNet(nn.Module):
         out = F.relu(self.bn1(out))
         out = F.avg_pool2d(out, 8)
         out = out.view(out.size(0), -1)
-        out = self.linear(out)
 
         return out
 
 
+class WideResNetCls(nn.Module):
+    def __init__(self, depth, widen_factor, num_classes):
+        super(WideResNetCls, self).__init__()
+        self.in_planes = 16
+
+        assert ((depth - 4) % 6 == 0), 'Wide-resnet depth should be 6n+4'
+        n = (depth - 4) / 6
+        k = widen_factor
+        n_stages = [16, 16 * k, 32 * k, 64 * k]
+        self.linear = nn.Linear(n_stages[3], num_classes)
+
+    def forward(self, x):
+        out = self.linear(x)
+        return out, x
+
+
 if __name__ == '__main__':
-    net = WideResNet(28, 10, 0.3, 10)
+    net = WideResNetFea(28, 10, 0.3)
+    cls = WideResNetCls(28, 10, 10)
     y = net(Variable(torch.randn(1, 3, 32, 32)))
+    y = cls(y)
 
     print(y.size())

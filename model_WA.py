@@ -5,11 +5,23 @@ import torch.nn.functional as F
 import torch
 import torch.nn.init as init
 from efficientnet_pytorch import EfficientNet
-from wideresnet import WideResNet
+from wideresnet import WideResNetFea, WideResNetCls
 
 
-def build_efficientnet_b0(num_classes):
-    return EfficientNet.from_name('efficientnet-b0', num_classes=num_classes)
+def build_efficientnet_b0_fea():
+    net = EfficientNet.from_name('efficientnet-b0')
+    net.fea_out = 1000
+    return net
+
+
+class EfficientNetB0Cls(nn.Module):
+    def __init__(self, fea_in,  num_classes):
+        super(EfficientNetB0Cls, self).__init__()
+        self.linear = nn.Linear(fea_in, num_classes)
+
+    def forward(self, x):
+        out = self.linear(x)
+        return out, x
 
 
 def get_net(name):
@@ -18,9 +30,9 @@ def get_net(name):
     elif name == 'VGG16':
         return VGG_10_fea, VGG_10_clf, VGG_10_dis
     elif name == 'EN0':
-        return lambda: build_efficientnet_b0(101), None, None
+        return lambda: build_efficientnet_b0_fea(), lambda: EfficientNetB0Cls(1000, 101), None
     elif name == 'WRN-28-2':
-        return lambda: WideResNet(28, 2, 0.3, 10), None, None
+        return lambda: WideResNetFea(28, 2, 0.3), lambda: WideResNetCls(28, 2, 10), None
 
 
 # net_1  for Mnist and Fashion_mnist
@@ -112,6 +124,7 @@ class VGG_10_fea(nn.Module):
         # vgg 11 for svhn
         # vgg 16 for cifar 10 and cifar 100
         self.features = self._make_layers(cfg['VGG16'])
+        self.fea_out = 512
 
     def forward(self, x):
         out = self.features(x)

@@ -52,6 +52,7 @@ class FixMatchDis(FixMatch):
                 optim_discriminator.zero_grad()
                 dsc_loss.backward()
                 optim_discriminator.step()
+                total_loss += dsc_loss.item()
             sys.stdout.write('\r')
             sys.stdout.write('Current discriminator model loss: {:.8f}'.format(total_loss/len(loader_tr)))
             sys.stdout.write('\n')

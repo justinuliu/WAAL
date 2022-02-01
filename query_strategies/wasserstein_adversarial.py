@@ -87,7 +87,7 @@ class WAAL:
 
 
     def update(self, idx_lb):
-
+        assert self.idx_lb is idx_lb
         self.idx_lb = idx_lb
 
 

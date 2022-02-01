@@ -1,6 +1,6 @@
 import os
 
-from torch.utils.data import ConcatDataset, Dataset
+from torch.utils.data import Dataset
 from torchvision import datasets
 import numpy as np
 import torch
@@ -61,7 +61,7 @@ def get_CIFAR10():
 
 def get_food101():
     data_tr = Food101('data', train=True, download=True)
-    data_te = Food101('data', train=False, download=False)
+    data_te = Food101('data', train=False, download=True)
     X_tr = np.array([x[0] for x in data_tr.samples])
     Y_tr = torch.from_numpy(np.array(data_tr.targets))
     X_te = np.array([x[0] for x in data_te.samples])

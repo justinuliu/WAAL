@@ -218,3 +218,18 @@ class FixMatch:
                 probs[idxs] = prob.cpu()
 
         return probs
+
+    def extract_feature(self, X, Y):
+        loader_te = DataLoader(self.test_handler(X, Y, transform=self.args['transform_te']),
+                               shuffle=False, **self.args['loader_te_args'])
+
+        self.fea.eval()
+
+        probs = torch.zeros([len(Y), 1000], device=self.device)
+        with torch.no_grad():
+            for x, y, idxs in loader_te:
+                x, y = x.to(self.device), y.to(self.device)
+                latent = self.fea(x)
+                probs[idxs] = latent
+
+        return probs.cpu()

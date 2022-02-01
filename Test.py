@@ -11,18 +11,21 @@ from query_strategies import WAAL, Entropy, Random, SWAAL, WAALFixMatch, WAALUnc
     LeastConfidence, FixMatchLeastConfidence, UmapPlot, KLDiv, FixMatchKLDiv, Discriminate, DisEntropyMixture, \
     FixMatchDisEntropyMixture, FixMatchDis, DisEntropyCombined, FixMatchDisEntropyCombined, FixMatchFarthestFirst
 from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFashionMNIST, Cutout, TransformFixFood101
+from query_strategies.entropy_kmeans_with_fixmatch import FixMatchEntropyKMeans
+from query_strategies.margin_kmeans_with_fixmatch import FixMatchMarginKMeans
+from query_strategies.margin_with_fixmatch import FixMatchMargin
 from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
 from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
-NUM_INIT_LB = 100
-NUM_QUERY = 100
+NUM_INIT_LB = 10100
+NUM_QUERY = 1000
 NUM_ROUND = 5
-DATA_NAME = 'CIFAR10'
-QUERY_STRATEGY = "FixMatchEntropy"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+DATA_NAME = 'Food101'
+QUERY_STRATEGY = "FixMatchMarginKMeans"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
 # setting training parameters
-MODEL_NAME = "WRN-28-2"
+MODEL_NAME = "EN0"
 alpha = 1e-2
-epoch = 50
+epoch = 110
 
 args_pool = {
     'FashionMNIST':
@@ -65,20 +68,23 @@ args_pool = {
             ]),
             'loader_tr_args': {'batch_size': 10, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
-            # 'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-3},  # for WRN-28-2
+            # 'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 1e-3},  # for WRN-28-2, supervised
+            # 'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-4},  # for WRN-28-2, fixmatch
             'optimizer_args': {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 0},  # for VGG16
             'num_class': 10,
             'transform_fixmatch': TransformFixSVHN((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970)),
             'threshold': 0.95,
-            'seed': 6,
+            'seed': 5,
             'epochs_dis': 10,
             'repr_portion': .4,
-            'farthest_first_criterion': 'w_to_o_dist',
-            'K': 2
+            'farthest_first_criterion': 'w_i_var',
+            'K': 2,
+            'num_per_cluster': 2,
+            'use_raw_pixel': False,
             # epochs for VGG16 for fixmatch 80
             # epochs for VGG16 for supervised 4000
-            # epochs for WRN-28-2 for fixmatch ?
-            # epochs for WRN-28-2 for supervised 500
+            # epochs for WRN-28-2 for fixmatch 100
+            # epochs for WRN-28-2 for supervised 1000
         },
     'CIFAR10':
         {
@@ -109,19 +115,22 @@ args_pool = {
             ]),
             'loader_tr_args': {'batch_size': 64, 'num_workers': 1},
             'loader_te_args': {'batch_size': 1000, 'num_workers': 1},
-            'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-3},  # for WRN-28-2
-            # 'optimizer_args': {'lr': 0.01, 'momentum': 0.3, 'weight_decay': 0},  # for VGG16
+            # 'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-3},  # for WRN-28-2, supervised
+            # 'optimizer_args': {'lr': 0.1, 'momentum': 0.3, 'weight_decay': 5e-4},  # for WRN-28-2, FixMatch
+            'optimizer_args': {'lr': 0.01, 'momentum': 0.3, 'weight_decay': 0},  # for VGG16
             'num_class': 10,
             'transform_fixmatch': TransformFixCIFAR((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
             'threshold': 0.95,
-            'seed': 7,
+            'seed': 4,
             'epochs_dis': 5,
             'repr_portion': .4,
             'farthest_first_criterion': 's_to_o_var',
-            'K': 2
+            'K': 2,
+            'num_per_cluster': 1,
+            'use_raw_pixel': False,
             # epochs for VGG16 for fixmatch 80
             # epochs for VGG16 for supervised 300
-            # epochs for WRN-28-2 for fixmatch 50
+            # epochs for WRN-28-2 for fixmatch 100
             # epochs for WRN-28-2 for supervised 500
         },
     'Food101':
@@ -155,7 +164,7 @@ args_pool = {
             ]),
             'loader_tr_args': {'batch_size': 128, 'num_workers': 16},
             'loader_te_args': {'batch_size': 256, 'num_workers': 16},
-            'optimizer_args': {'lr': 0.1, 'momentum': 0.9, 'weight_decay': 5e-4},  # for EfficientNet-b0
+            'optimizer_args': {'lr': 0.1, 'momentum': 0.3, 'weight_decay': 0},  # for EfficientNet-b0
             'num_class': 101,
             'transform_fixmatch': TransformFixFood101((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             'threshold': 0.95,
@@ -164,6 +173,8 @@ args_pool = {
             'repr_portion': .4,
             'farthest_first_criterion': 'w_i_var',
             'K': 2,
+            'num_per_cluster': 1,
+            'use_raw_pixel': False,
             # epochs for fixmatch 110
             # epochs for supervised 300
         },
@@ -291,6 +302,12 @@ elif QUERY_STRATEGY == 'FixMatchSupEntropy':
 elif QUERY_STRATEGY == 'FixMatchSupLeastConfidence':
     strategy = FixMatchSupLeastConfidence(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler,
                                           args)
+elif QUERY_STRATEGY == 'FixMatchMarginKMeans':
+    strategy = FixMatchMarginKMeans(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchEntropyKMeans':
+    strategy = FixMatchEntropyKMeans(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchMargin':
+    strategy = FixMatchMargin(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 

@@ -225,7 +225,7 @@ class FixMatch:
 
         self.fea.eval()
 
-        probs = torch.zeros([len(Y), 1000], device=self.device)
+        probs = torch.zeros([len(Y), self.fea.fea_out], device=self.device)
         with torch.no_grad():
             for x, y, idxs in loader_te:
                 x, y = x.to(self.device), y.to(self.device)

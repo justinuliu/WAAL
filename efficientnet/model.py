@@ -149,6 +149,7 @@ class EfficientNetFea(nn.Module):
         self._global_params = global_params
         self._blocks_args = blocks_args
 
+        self.fea_out = 1280
         # Batch norm parameters
         bn_mom = 1 - self._global_params.batch_norm_momentum
         bn_eps = self._global_params.batch_norm_epsilon

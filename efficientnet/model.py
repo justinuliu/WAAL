@@ -258,6 +258,8 @@ class EfficientNetFea(nn.Module):
 
         # Head
         x = self._swish(self._bn1(self._conv_head(x)))
+        x = self._avg_pooling(x)
+        x = x.flatten(start_dim=1)
 
         return x
 
@@ -384,10 +386,9 @@ class EfficientNetCls(nn.Module):
 
     def forward(self, inputs):
         x = inputs
-        # Pooling and final linear layer
-        x = self._avg_pooling(x)
+        # final linear layer
+
         if self._global_params.include_top:
-            x = x.flatten(start_dim=1)
             x = self._dropout(x)
             x = self._fc(x)
         return x, inputs

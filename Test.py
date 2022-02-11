@@ -325,7 +325,7 @@ acc[0] = 1.0 * (Y_te == P).sum().item() / len(Y_te)
 print('Round 0\ntesting accuracy {:.3f}'.format(acc[0]))
 
 query_count = np.zeros(args['num_class'])
-query_list = np.zeros((NUM_ROUND, NUM_QUERY), dtype=np.int)
+query_list = np.zeros((NUM_ROUND, NUM_QUERY), dtype=int)
 
 for rd in range(1, NUM_ROUND + 1):
     print('================Round {:d}==============='.format(rd))

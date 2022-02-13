@@ -1,13 +1,15 @@
 import numpy as np
+import numpy.random
+
 from query_strategies.fixmatch import FixMatch
 import torch
 from sklearn.cluster import KMeans
 
 
-class FixMatchMarginKMeans(FixMatch):
+class FixMatchRandomKMeans(FixMatch):
 
     def __init__(self, X, Y, idx_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args):
-        super(FixMatchMarginKMeans, self).__init__(X, Y, idx_lb, net_fea, net_clf, net_dis, train_handler,
+        super(FixMatchRandomKMeans, self).__init__(X, Y, idx_lb, net_fea, net_clf, net_dis, train_handler,
                                                    test_handler, args)
 
     def query(self, query_num):
@@ -24,13 +26,9 @@ class FixMatchMarginKMeans(FixMatch):
 
         query_list = []
         for i in range(num_clusters):
-            idxs_cluster=idxs_unlabeled[model.labels_==i]
-            probs = self.predict_prob(self.X[idxs_cluster], self.Y[idxs_cluster])
-            top2, _ = torch.topk(probs, 2, dim=1)
-            score = 1 - (top2[:, 0] - top2[:, 1])
-            idx = score.sort(descending=True)[1][:num_per_cluster]
-            q = idxs_cluster[idx.tolist()]
-            query_list += list(q)
+            idxs_cluster = idxs_unlabeled[model.labels_ == i]
+            idx = numpy.random.choice(idxs_cluster, num_per_cluster)
+            query_list += list(idx)
 
         if len(query_list) < query_num:
             n = query_num - len(query_list)

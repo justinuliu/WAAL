@@ -14,6 +14,7 @@ from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFa
 from query_strategies.entropy_kmeans_with_fixmatch import FixMatchEntropyKMeans
 from query_strategies.margin_kmeans_with_fixmatch import FixMatchMarginKMeans
 from query_strategies.margin_with_fixmatch import FixMatchMargin
+from query_strategies.random_kmeans_with_fixmatch import FixMatchRandomKMeans
 from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
 from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
@@ -308,6 +309,8 @@ elif QUERY_STRATEGY == 'FixMatchEntropyKMeans':
     strategy = FixMatchEntropyKMeans(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchMargin':
     strategy = FixMatchMargin(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchRandomKMeans':
+    strategy = FixMatchRandomKMeans(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 

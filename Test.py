@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-
+import argparse
 from autoaugment import SVHNPolicy, CIFAR10Policy, ImageNetPolicy
 from dataset_WA import get_dataset, get_handler
 import dataset
@@ -14,18 +14,23 @@ from dataset_fixmatch import TransformFixCIFAR, TransformFixSVHN, TransformFixFa
 from query_strategies.entropy_kmeans_with_fixmatch import FixMatchEntropyKMeans
 from query_strategies.margin_kmeans_with_fixmatch import FixMatchMarginKMeans
 from query_strategies.margin_with_fixmatch import FixMatchMargin
+from query_strategies.random_kmeans_with_fixmatch import FixMatchRandomKMeans
 from query_strategies.sup_entropy_with_fixmatch import FixMatchSupEntropy
 from query_strategies.sup_least_confidence_with_fixmatch import FixMatchSupLeastConfidence
 
-NUM_INIT_LB = 10100
-NUM_QUERY = 1000
-NUM_ROUND = 5
-DATA_NAME = 'Food101'
-QUERY_STRATEGY = "FixMatchMarginKMeans"  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
-# setting training parameters
-MODEL_NAME = "EN0"
-alpha = 1e-2
-epoch = 110
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-m", "--model", required=True, type=str)
+parser.add_argument("-d", "--dataset", required=True, type=str)
+parser.add_argument("-s", "--seed", required=True, type=int)
+parser.add_argument("-i", "--num_init", required=True, type=int)
+parser.add_argument("-q", "--num_query", required=True, type=int)
+parser.add_argument("-r", "--num_round", required=False, type=int, default=5)
+parser.add_argument("-a", "--algorithm", required=True, type=str)
+parser.add_argument("--lr", required=False, type=float, default=1e-2)
+parser.add_argument("-e", "--epoch", required=True, type=int)
+
+input_args = parser.parse_args()
 
 args_pool = {
     'FashionMNIST':
@@ -126,7 +131,7 @@ args_pool = {
             'repr_portion': .4,
             'farthest_first_criterion': 's_to_o_var',
             'K': 2,
-            'num_per_cluster': 1,
+            'num_per_cluster': 4,
             'use_raw_pixel': False,
             # epochs for VGG16 for fixmatch 80
             # epochs for VGG16 for supervised 300
@@ -162,8 +167,8 @@ args_pool = {
                 transforms.ToTensor(),
                 transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
             ]),
-            'loader_tr_args': {'batch_size': 128, 'num_workers': 16},
-            'loader_te_args': {'batch_size': 256, 'num_workers': 16},
+            'loader_tr_args': {'batch_size': 100, 'num_workers': 16},
+            'loader_te_args': {'batch_size': 200, 'num_workers': 16},
             'optimizer_args': {'lr': 0.1, 'momentum': 0.3, 'weight_decay': 0},  # for EfficientNet-b0
             'num_class': 101,
             'transform_fixmatch': TransformFixFood101((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
@@ -219,8 +224,20 @@ def stratified_split_dataset(targets, num_labelled_samples, num_classes, seed=No
 
     return idxs_lb
 
+NUM_INIT_LB = input_args.num_init
+NUM_QUERY = input_args.num_query
+NUM_ROUND = input_args.num_round
+DATA_NAME = input_args.dataset
+QUERY_STRATEGY = input_args.algorithm  # Could be WAAL, SWAAL (WAAL without semi-supervised manner), Random, Entropy
+# setting training parameters
+MODEL_NAME = input_args.model
+alpha = input_args.lr
+epoch = input_args.epoch
 
 args = args_pool[DATA_NAME]
+
+args["seed"] = input_args.seed
+
 # load dataset (Only using the first 50K)
 X_tr, Y_tr, X_te, Y_te = get_dataset(DATA_NAME)
 if DATA_NAME != 'Food101':
@@ -308,6 +325,8 @@ elif QUERY_STRATEGY == 'FixMatchEntropyKMeans':
     strategy = FixMatchEntropyKMeans(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 elif QUERY_STRATEGY == 'FixMatchMargin':
     strategy = FixMatchMargin(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
+elif QUERY_STRATEGY == 'FixMatchRandomKMeans':
+    strategy = FixMatchRandomKMeans(X_tr, Y_tr, idxs_lb, net_fea, net_clf, net_dis, train_handler, test_handler, args)
 else:
     raise Exception('Unknown query strategy: {}'.format(QUERY_STRATEGY))
 

@@ -42,5 +42,4 @@ class FixMatchMarginKMeans(FixMatch):
             q = idxs_unlabeled[idx.tolist()]
             query_list += list(q)
 
-
         return query_list

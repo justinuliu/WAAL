@@ -2,9 +2,9 @@ import numpy as np
 import numpy.random
 
 from query_strategies.fixmatch import FixMatch
-import torch
 from sklearn.cluster import KMeans
 
+import collections
 
 class FixMatchRandomKMeans(FixMatch):
 
@@ -27,17 +27,17 @@ class FixMatchRandomKMeans(FixMatch):
         query_list = []
         for i in range(num_clusters):
             idxs_cluster = idxs_unlabeled[model.labels_ == i]
-            idx = numpy.random.choice(idxs_cluster, num_per_cluster)
-            query_list += list(idx)
+            idxs = numpy.random.choice(idxs_cluster, num_per_cluster, replace=False)
+            query_list += list(idxs)
+
+        print(f'size of query_list: {len(query_list)}')
+        print(f'size of idxs_unlabeled: {len(idxs_unlabeled)}')
+        print('Duplicate index: ')
+        print([item for item, count in collections.Counter(query_list).items() if count > 1])
 
         if len(query_list) < query_num:
             n = query_num - len(query_list)
-            idxs_unlabeled = np.setdiff1d(idxs_unlabeled, np.array(query_list))
-            probs = self.predict_prob(self.X[idxs_unlabeled], self.Y[idxs_unlabeled])
-            top2, _ = torch.topk(probs, 2, dim=1)
-            score = 1 - (top2[:, 0] - top2[:, 1])
-            idx = score.sort(descending=True)[1][:n]
-            q = idxs_unlabeled[idx.tolist()]
-            query_list += list(q)
+            idxs = numpy.random.choice([i for i in idxs_unlabeled if i not in query_list], n)
+            query_list += list(idxs)
 
         return query_list

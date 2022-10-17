@@ -131,7 +131,7 @@ args_pool = {
             'repr_portion': .4,
             'farthest_first_criterion': 's_to_o_var',
             'K': 2,
-            'num_per_cluster': 1,
+            'num_per_cluster': 4,
             'use_raw_pixel': False,
             # epochs for VGG16 for fixmatch 80
             # epochs for VGG16 for supervised 300
